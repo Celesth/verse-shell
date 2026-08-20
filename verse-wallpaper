@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# verse-wallpaper — set wallpaper via hyprpaper (images) or mpvpaper (video)
+# Called by verse with: WALL=<path> BLUR=<path> wallCommand="verse-wallpaper"
+
+set -euo pipefail
+
+WALL="${WALL:?WALL not set}"
+BLUR="${BLUR:-}"
+MONITOR="${VERSE_MONITOR:-$(hyprctl monitors -j 2>/dev/null | jq -r '.[0].name' 2>/dev/null || echo "VGA-1")}"
+CONF="/tmp/hyprpaper.conf"
+
+# expand ~ in paths
+WALL="${WALL/#\~/$HOME}"
+BLUR="${BLUR/#\~/$HOME}"
+
+# determine file type
+ext="${WALL##*.}"
+ext="${ext,,}"
+
+case "$ext" in
+    mp4|webm|mkv|mov)
+        pkill hyprpaper 2>/dev/null || true
+        pkill mpvpaper 2>/dev/null || true
+        sleep 0.1
+        setsid mpvpaper -s -a MAX -o "no-audio --loop-file=inf" "$MONITOR" "$WALL" >/dev/null 2>&1 &
+        ;;
+    *)
+        pkill mpvpaper 2>/dev/null || true
+
+        # check if hyprpaper is already running with our config
+        if pgrep -x hyprpaper >/dev/null 2>&1; then
+            # try IPC first
+            hyprctl hyprpaper wallpaper "$MONITOR, $WALL" 2>/dev/null && exit 0
+        fi
+
+        # IPC failed or hyprpaper not running — write config and restart
+        pkill hyprpaper 2>/dev/null || true
+        sleep 0.2
+
+        cat > "$CONF" << EOF
+splash = false
+ipc = on
+
+wallpaper {
+    monitor = $MONITOR
+    path = $WALL
+    fit_mode = cover
+}
+EOF
+
+        setsid hyprpaper --config "$CONF" >/dev/null 2>&1 &
+        ;;
+esac

@@ -8,7 +8,7 @@ import QtQuick
 // SettingsSchema writes to Settings), and so "what is the default" has one
 // answer instead of a literal repeated at both ends.
 QtObject {
-    readonly property string wallCommand: 'pkill mpvpaper; pkill hyprpaper; case "$WALL" in *.mp4|*.webm|*.mkv|*.mov|*.gif) mpvpaper -s -a MAX -o "no-audio --loop-file=inf" HDMI-A-1 "$WALL";; *) hyprpaper preload "$WALL" && hyprpaper wallpaper "HDMI-A-1,$WALL";; esac'
+    readonly property string wallCommand: 'export PATH="$HOME/.local/bin:$PATH"; verse-wallpaper'
     readonly property string wallpaperDir: "~/Pictures/Wallpapers"
 
     readonly property var pages: ({ clock: true, apps: true, walls: true, clips: true })
