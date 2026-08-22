@@ -21,10 +21,7 @@ repo="$(dirname "$(readlink -f "$0")")"
 # right before spawning a new daemon, so a toggle against an already-running
 # daemon skips the settings read and gsettings round-trip entirely.
 export_icon_theme() {
-    # quickshell keys persisted state by md5(path to shell.qml), so this
-    # stays correct across renames/moves instead of hardcoding the current hash
-    shell_id=$(printf '%s' "$repo/shell.qml" | md5sum | cut -d' ' -f1)
-    settings="$HOME/.local/state/quickshell/by-shell/$shell_id/settings.json"
+    settings="$HOME/.config/verse/settings.json"
     theme=$(sed -n 's/.*"iconTheme": *"\([^"]*\)".*/\1/p' "$settings" 2>/dev/null | head -1)
     # no explicit choice: follow the system (GTK) icon theme, since Qt inside a
     # bare layer-shell session can't detect it and would fall back to hicolor
@@ -40,8 +37,7 @@ export_icon_theme() {
 # monospace font here instead and hand it to Theme.fontFamily as the
 # fallback when no explicit choice is set.
 export_font_family() {
-    shell_id=$(printf '%s' "$repo/shell.qml" | md5sum | cut -d' ' -f1)
-    settings="$HOME/.local/state/quickshell/by-shell/$shell_id/settings.json"
+    settings="$HOME/.config/verse/settings.json"
     font=$(sed -n 's/.*"fontFamily": *"\([^"]*\)".*/\1/p' "$settings" 2>/dev/null | head -1)
     if [ -z "$font" ]; then
         font=$(gsettings get org.gnome.desktop.interface monospace-font-name 2>/dev/null | tr -d "'")
@@ -123,15 +119,34 @@ stop_daemon() {
     reap_duplicates
     pids=$(running_pids)
     [ -n "$pids" ] && kill $pids
+    rm -f /tmp/verse-daemon.lock
+}
+# guard: acquire lockfile + set env; caller spawns qs
+guard_start() {
+    python3 "$repo/verse-guard.py" /tmp/verse-daemon.lock || return 1
+    export_icon_theme
+    export_font_family
+    export_native_dialogs
+    export_render_loop
+}
+# background-ipc: spawn daemon in background, poll until IPC available, then
+# run an IPC function. Returns 0 on success.
+bg_ipc() {
+    local ipc_fn="$1"; shift
+    setsid -f qs -p "$repo" >/dev/null 2>&1
+    for _ in $(seq 1 50); do
+        sleep 0.1
+        ipc "$ipc_fn" "$@" && return 0
+    done
+    return 1
 }
 
 # built-in pages plus whatever custom pages are currently uploaded, read
 # straight out of settings.json (same file/format export_icon_theme reads)
 # so `verse help` always reflects what's actually toggleable right now
 list_pages() {
-    local shell_id settings ids
-    shell_id=$(printf '%s' "$repo/shell.qml" | md5sum | cut -d' ' -f1)
-    settings="$HOME/.local/state/quickshell/by-shell/$shell_id/settings.json"
+    local settings ids
+    settings="$HOME/.config/verse/settings.json"
     # the readable names, not the panes' internal ids ("walls"/"clips" -
     # settings keys that can't be renamed); LauncherState.resolvePageArg
     # maps these back, and still takes the internal ids too
@@ -174,16 +189,15 @@ USAGE
 
 case "$1" in
 start)
-    # never start a second daemon
-    running_pids >/dev/null && exit 0
     export_icon_theme
     export_font_family
     export_native_dialogs
     export_render_loop
-    exec qs -p "$repo"
+    exec python3 "$repo/verse-guard.py" /tmp/verse-daemon.lock qs -p "$repo"
     ;;
 stop)
     stop_daemon
+    rm -f /tmp/verse-daemon.lock
     exit 0
     ;;
 restart)
@@ -196,41 +210,22 @@ restart)
     export_font_family
     export_native_dialogs
     export_render_loop
-    setsid -f qs -p "$repo" >/dev/null 2>&1
+    exec python3 "$repo/verse-guard.py" /tmp/verse-daemon.lock qs -p "$repo"
     ;;
 toggle)
-    # $2, if given, is a page id (verse toggle clipboard): opens straight onto
-    # that page, switches to it if the launcher is already open elsewhere,
-    # or closes if it's already the one showing. Always passed through
-    # (even empty) since the IPC function takes it as a required argument.
     reap_duplicates
     ipc toggle "$2" && exit 0
-    # daemon not running: start it, then retry through the same toggle call
-    # so a page argument still lands on the freshly-opened launcher
-    export_icon_theme
-    export_font_family
-    export_native_dialogs
-    export_render_loop
-    setsid -f qs -p "$repo" >/dev/null 2>&1
-    for _ in $(seq 1 50); do
-        sleep 0.1
-        ipc toggle "$2" && exit 0
-    done
+    # daemon not running: acquire lock, then start qs and poll IPC
+    guard_start || exit 1
+    bg_ipc toggle "$2" && exit 0
     exit 1
     ;;
 settings)
     reap_duplicates
     ipc settings && exit 0
-    # daemon not running: start it, then retry
-    export_icon_theme
-    export_font_family
-    export_native_dialogs
-    export_render_loop
-    setsid -f qs -p "$repo" >/dev/null 2>&1
-    for _ in $(seq 1 50); do
-        sleep 0.1
-        ipc settings && exit 0
-    done
+    # daemon not running: acquire lock, then start qs and poll IPC
+    guard_start || exit 1
+    bg_ipc settings && exit 0
     exit 1
     ;;
 replay)

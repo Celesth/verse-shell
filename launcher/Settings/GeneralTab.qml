@@ -36,6 +36,10 @@ Column {
     SettingRow { key: "dimOpacity"; label: "Background opacity" }
     SettingRow { key: "roundedCorners"; label: "Rounded corners" }
     SettingRow { key: "barEnabled"; label: "Show bar" }
+    SettingRow { key: "barExclusive"; label: "Bar reserves space" }
+    SettingRow { key: "barPadding"; label: "Bar padding"; hint: "extra gap between bar and windows" }
+    SettingRow { key: "hyprBorder"; label: "Window border"; hint: "0 = no borders" }
+    SettingRow { key: "hyprRounding"; label: "Window corners"; hint: "0 = no rounding" }
     SettingRow { key: "fontFamily"; label: "Font" }
     SettingRow { key: "fontScale"; label: "Font size" }
     ThemeRow {}

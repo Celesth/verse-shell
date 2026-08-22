@@ -62,4 +62,8 @@ QtObject {
 
     // battery % the low-battery alert fires at (see Battery.checkLevel)
     readonly property int batteryAlertLevel: 5
+
+    readonly property int barPadding: 0
+    readonly property int hyprBorder: 2
+    readonly property int hyprRounding: 8
 }

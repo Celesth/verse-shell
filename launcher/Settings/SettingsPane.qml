@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import "root:/config"
 import "root:/launcher"
 import "root:/services"
@@ -43,6 +44,9 @@ Item {
                 root.latchScramble();
                 enterAnim.restart();
                 scrollFlick.contentY = 0;
+            } else if (Settings.settingsDirty) {
+                Settings.savePending();
+                Quickshell.execDetached(["notify-send", "-a", "verse", "-i", "preferences-system", "Settings saved", "Changes written to ~/.config/verse/settings.json"]);
             }
         }
     }

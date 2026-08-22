@@ -16,7 +16,7 @@ Scope {
     FileView {
         id: store
 
-        path: Quickshell.statePath("settings.json")
+        path: "$HOME/.config/verse/settings.json"
         blockLoading: true
         printErrors: false
         // pick up hand edits to settings.json live; without this the daemon

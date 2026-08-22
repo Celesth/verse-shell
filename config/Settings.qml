@@ -17,9 +17,26 @@ JsonAdapter {
     // to reach back at the FileView that owns it.
     signal saveRequested
     signal loaded
+    signal settingsChanged
+
+    property bool settingsDirty: false
 
     function save(): void {
         settings.saveRequested();
+    }
+
+    function markDirty(): void {
+        if (!settingsDirty) {
+            settingsDirty = true;
+            settingsChanged();
+        }
+    }
+
+    function savePending(): void {
+        if (settingsDirty) {
+            settingsDirty = false;
+            settings.save();
+        }
     }
 
     // Membership tests for the object-valued toggle sets. They default to on
@@ -112,6 +129,10 @@ JsonAdapter {
     property string fontFamily: ""
     property string iconTheme: ""
     property bool barEnabled: true
+    property bool barExclusive: true
+    property int barPadding: 0
+    property int hyprBorder: 2
+    property int hyprRounding: 8
 
     property string theme: "matugen"
     // user-editable palette for the "custom" theme; defaults match the retired

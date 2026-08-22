@@ -164,6 +164,14 @@ Singleton {
             return Settings.wallpaperLive ? "on" : "off";
         case "barEnabled":
             return Settings.barEnabled ? "on" : "off";
+        case "barExclusive":
+            return Settings.barExclusive ? "on" : "off";
+        case "barPadding":
+            return Settings.barPadding + " px";
+        case "hyprBorder":
+            return Settings.hyprBorder + " px";
+        case "hyprRounding":
+            return Settings.hyprRounding + " px";
         }
         return "";
     }
@@ -253,43 +261,55 @@ Singleton {
         case "barEnabled":
             Settings.barEnabled = !Settings.barEnabled;
             break;
+        case "barExclusive":
+            Settings.barExclusive = !Settings.barExclusive;
+            break;
+        case "barPadding":
+            Settings.barPadding = Math.max(0, Math.min(40, Settings.barPadding + dir * 2));
+            break;
+        case "hyprBorder":
+            Settings.hyprBorder = Math.max(0, Math.min(10, Settings.hyprBorder + dir));
+            break;
+        case "hyprRounding":
+            Settings.hyprRounding = Math.max(0, Math.min(20, Settings.hyprRounding + dir * 2));
+            break;
         }
-        Settings.save();
+        Settings.markDirty();
     }
 
     function toggleIndicator(name: string): void {
         const indicators = Object.assign({}, Defaults.pageIndicators, Settings.pageIndicators);
         indicators[name] = indicators[name] === false;
         Settings.pageIndicators = indicators;
-        Settings.save();
+        Settings.markDirty();
     }
 
     function toggleFlyout(name: string): void {
         const flyouts = Object.assign({}, Defaults.flyouts, Settings.flyouts);
         flyouts[name] = flyouts[name] === false;
         Settings.flyouts = flyouts;
-        Settings.save();
+        Settings.markDirty();
     }
 
     function toggleScrambleSection(name: string): void {
         const sections = Object.assign({}, Defaults.scrambleSections, Settings.scrambleSections);
         sections[name] = sections[name] === false;
         Settings.scrambleSections = sections;
-        Settings.save();
+        Settings.markDirty();
     }
 
     function toggleAlert(name: string): void {
         const alerts = Object.assign({}, Defaults.verseAlerts, Settings.verseAlerts);
         alerts[name] = alerts[name] === false;
         Settings.verseAlerts = alerts;
-        Settings.save();
+        Settings.markDirty();
     }
 
     function setBind(action: string, key: string): void {
         const binds = Object.assign({}, Settings.keybinds);
         binds[action] = key;
         Settings.keybinds = binds;
-        Settings.save();
+        Settings.markDirty();
     }
 
     function reset(key: string): void {
@@ -427,6 +447,18 @@ Singleton {
         case "barEnabled":
             Settings.barEnabled = true;
             break;
+        case "barExclusive":
+            Settings.barExclusive = true;
+            break;
+        case "barPadding":
+            Settings.barPadding = 0;
+            break;
+        case "hyprBorder":
+            Settings.hyprBorder = 2;
+            break;
+        case "hyprRounding":
+            Settings.hyprRounding = 8;
+            break;
         default:
             if (key.startsWith("bind:")) {
                 const action = key.slice(5);
@@ -434,6 +466,6 @@ Singleton {
                 return; // setBind saves
             }
         }
-        Settings.save();
+        Settings.markDirty();
     }
 }

@@ -55,7 +55,7 @@ Item {
 
     function updateTime() {
         const now = new Date();
-        timeStr = now.toLocaleTimeString(Qt.locale(), "HH:mm");
+        timeStr = now.toLocaleTimeString(Qt.locale(), "h:mm AP");
         dateStr = now.toLocaleDateString(Qt.locale(), "ddd MMM d");
     }
 
