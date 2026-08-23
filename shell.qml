@@ -44,6 +44,7 @@ ShellRoot {
         id: launcher
     }
     BarWindow {}
+    AppsPanel {}
     VolumeOsd {}
     NotificationFlyout {}
 
@@ -62,6 +63,13 @@ ShellRoot {
         // switches to it and stays open - a different page's keybind reads as
         // "take me there", not "close everything".
         function toggle(page: string): void {
+            if (page === "apps") {
+                if (launcher.shown)
+                    launcher.exit();
+                else
+                    LauncherState.barAppsOpen = !LauncherState.barAppsOpen;
+                return;
+            }
             const target = LauncherState.resolvePageArg(page);
             if (launcher.shown && !LauncherState.exiting) {
                 if (target && LauncherState.pane !== target)

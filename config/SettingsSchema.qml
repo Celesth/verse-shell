@@ -81,6 +81,7 @@ Singleton {
         { id: "apps", label: "apps" },
         { id: "walls", label: "wallpapers" },
         { id: "clips", label: "clipboard" },
+        { id: "bar", label: "bar" },
         { id: "volume", label: "volume" },
         { id: "power", label: "power" },
         { id: "notifs", label: "notifications" },
@@ -172,6 +173,8 @@ Singleton {
             return Settings.hyprBorder + " px";
         case "hyprRounding":
             return Settings.hyprRounding + " px";
+        case "textScramble":
+            return Settings.textScramble ? "on" : "off";
         }
         return "";
     }
@@ -273,6 +276,9 @@ Singleton {
         case "hyprRounding":
             Settings.hyprRounding = Math.max(0, Math.min(20, Settings.hyprRounding + dir * 2));
             break;
+        case "textScramble":
+            Settings.textScramble = !Settings.textScramble;
+            break;
         }
         Settings.markDirty();
     }
@@ -347,8 +353,7 @@ Singleton {
             Settings.animStyle = "bloom";
             break;
         case "textScramble":
-            // the row is its chips, so its reset is theirs (the key it is
-            // still named for is retired - see Settings.heal)
+            Settings.textScramble = true;
             Settings.scrambleSections = Defaults.scrambleSections;
             break;
         case "roundedCorners":

@@ -22,7 +22,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             text: "\ue425"
             font.family: Icons.family
-            font.pixelSize: Theme.fontSize(11)
+            font.pixelSize: Theme.fontSize(10)
             color: Qt.alpha(Theme.muted, 0.6)
         }
 
@@ -31,11 +31,20 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             text: root.timeStr
             color: Theme.fg
-            font.pixelSize: Theme.fontSize(13)
+            font.pixelSize: Theme.fontSize(12)
             font.family: Theme.fontFamily
         }
 
-        // date
+        // separator
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            text: "·"
+            color: Qt.alpha(Theme.muted, 0.4)
+            font.pixelSize: Theme.fontSize(12)
+            font.family: Theme.fontFamily
+        }
+
+        // date — day month date, year
         Text {
             anchors.verticalCenter: parent.verticalCenter
             text: root.dateStr
@@ -56,7 +65,7 @@ Item {
     function updateTime() {
         const now = new Date();
         timeStr = now.toLocaleTimeString(Qt.locale(), "h:mm AP");
-        dateStr = now.toLocaleDateString(Qt.locale(), "ddd MMM d");
+        dateStr = now.toLocaleDateString(Qt.locale(), "ddd, MMM d, yyyy");
     }
 
     MouseArea {

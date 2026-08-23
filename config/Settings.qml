@@ -425,5 +425,11 @@ JsonAdapter {
             settings.textScramble = true;
             settings.save();
         }
+        // add "bar" section for configs that predate it (default on)
+        if (settings.scrambleSections && !Object.prototype.hasOwnProperty.call(settings.scrambleSections, "bar")) {
+            const sections = Object.assign({}, settings.scrambleSections, { bar: true });
+            settings.scrambleSections = sections;
+            settings.save();
+        }
     }
 }

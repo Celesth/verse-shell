@@ -149,6 +149,8 @@ Singleton {
     // animation setting instead, which they check at the label (see
     // ScrambleText's `scramble`, and SettingsPane's scrambleSuppressed).
     function scrambleAllowed(section: string): bool {
+        if (!Settings.textScramble)
+            return false;
         // "" is the launcher's own stage, and the stage is whichever page is on
         // it - so the label answers to that page's chip. Which page that is has
         // to be pushed down here: this is a service, and the pane it means
@@ -195,7 +197,7 @@ Singleton {
     // never settles - nothing in the shell does, but a custom page can.
     readonly property int scrambleMaxRun: 10000
     // how long one noise glyph holds before it rerolls
-    readonly property int scrambleHold: 45
+    readonly property int scrambleHold: 80
     // Symbols rather than letters: noise made of letters reads as a word that
     // hasn't loaded, where shapes and punctuation read as static - which is
     // the point, and stays clearly distinct from the string landing
@@ -229,12 +231,11 @@ Singleton {
     // be read as markup rather than drawn.
     //
     // Every glyph is BMP, so charAt() below indexes whole characters.
-    readonly property string scrambleCandidates: "■□▪▫◆◇◈●○◉▲▼◀▶¤£°±×÷¬•~=+*#%?!^"
-        + "░▒▓█▌▐▄▀"           // full-em blocks
-        + "▣▤▥▦▧▨▩◧◨◩◪"        // shaded and part-filled squares
-        + "◐◑◒◓◢◣◤◥"           // half circles, corner triangles
-        + "¶§@µ$¢/\\|†‡◊"       // descenders
-        + "⬛⬜⬥⬦⧫⏹⏺"           // outsized shapes
+    readonly property string scrambleCandidates: "アイウエオカキクケコサシスセソタチツテトナニヌネノ"
+        + "ハヒフヘホマミムメモヤユヨラリルレロワヲン"
+        + "ガギグゲゴザジズゼゴダデドバビブベボパピプペポ"
+        + "永集中遵守確認実現創造環境情報通信技術研究"
+        + "零一二三四五六七八九十百千万円年月日時分秒"
     // Plain ASCII, so no face is without it. The floor the probe can never
     // take the alphabet below: a font with none of the shapes still scrambles,
     // and so does a label drawn in the frames before there is a resolved font
@@ -453,7 +454,7 @@ Singleton {
     // the one number the whole effect is timed against, and the point of
     // having a single number is that nothing, a label or a user, can put one
     // label out of step with the rest.
-    readonly property int scrambleSpan: 575
+    readonly property int scrambleSpan: 900
 
     // `source` as it looks `elapsed` ms into the run (negative while a label
     // is still waiting out its stagger delay): characters resolve left to

@@ -23,6 +23,7 @@ Singleton {
     // decoding, which is why they have to be reachable from outside the window.
     property bool shown: false
     property bool exiting: false
+    property bool barAppsOpen: false
 
     // Which shape the open/close animation takes. "grow" styles reveal a circle
     // that expands to cover the screen; "fade" cross-fades content opacity

@@ -28,7 +28,7 @@ QtObject {
     // the loudest thing the shell does, so it is opt-in. A custom page has no
     // key here and needs none - an unknown one reads as off too (see
     // Settings.scrambleEnabled).
-    readonly property var scrambleSections: ({ clock: false, apps: false, walls: false, clips: false, volume: false, notifs: false, settings: false, power: false })
+    readonly property var scrambleSections: ({ clock: false, apps: false, walls: false, clips: false, volume: false, notifs: false, settings: false, power: false, bar: true })
     readonly property var verseAlerts: ({ errors: true, missingDeps: true, actions: true, battery: true })
     readonly property var keybinds: ({
         cycle: "Tab",
