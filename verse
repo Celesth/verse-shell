@@ -193,6 +193,11 @@ start)
     export_font_family
     export_native_dialogs
     export_render_loop
+    # clipboard watchers — only if not already running
+    if ! pgrep -f "wl-paste.*cliphist" >/dev/null 2>&1; then
+        wl-paste --type text --watch cliphist store &
+        wl-paste --type image --watch cliphist store &
+    fi
     exec python3 "$repo/verse-guard.py" /tmp/verse-daemon.lock qs -p "$repo"
     ;;
 stop)
@@ -210,6 +215,11 @@ restart)
     export_font_family
     export_native_dialogs
     export_render_loop
+    # clipboard watchers — only if not already running
+    if ! pgrep -f "wl-paste.*cliphist" >/dev/null 2>&1; then
+        wl-paste --type text --watch cliphist store &
+        wl-paste --type image --watch cliphist store &
+    fi
     exec python3 "$repo/verse-guard.py" /tmp/verse-daemon.lock qs -p "$repo"
     ;;
 toggle)

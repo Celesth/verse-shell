@@ -12,6 +12,9 @@ Scope {
     // load: onLoaded re-fires on every save, because writeAdapter's own write
     // loops back through the file watcher below.
     property bool themeKicked: false
+    // Auto-wallpaper: applied once after the first scan populates the list,
+    // when no wallpaper was persisted.
+    property bool autoWallpaperFired: false
 
     FileView {
         id: store
@@ -42,6 +45,7 @@ Scope {
             Settings.flyouts = Object.assign({}, Settings.flyouts);
             Settings.verseAlerts = Object.assign({}, Settings.verseAlerts);
             Settings.clockShow = Object.assign({}, Settings.clockShow);
+            Settings.scrambleSections = Object.assign({}, Settings.scrambleSections);
             Settings.heal();
             Settings.loaded();
 
@@ -50,7 +54,44 @@ Scope {
                 if (Settings.theme === "matugen")
                     Theme.sampleWallpaper();
             }
+            // auto-load a random wallpaper on first boot (no persisted
+            // currentWallpaper); deferred until the scan populates the list
+            if (!root.autoWallpaperFired && Settings.currentWallpaper === "") {
+                if (Wallpapers.list.length > 0) {
+                    root.autoWallpaperFired = true;
+                    root.applyRandomWallpaper();
+                }
+            }
         }
+    }
+
+    Connections {
+        target: Wallpapers
+        function onListChanged(): void {
+            if (root.autoWallpaperFired || Settings.currentWallpaper !== "")
+                return;
+            if (Wallpapers.list.length > 0) {
+                root.autoWallpaperFired = true;
+                root.applyRandomWallpaper();
+            }
+        }
+    }
+
+    function applyRandomWallpaper(): void {
+        const walls = Wallpapers.list.filter(w => !w.video);
+        if (walls.length === 0) return;
+        const pick = walls[Math.floor(Math.random() * walls.length)];
+        Settings.currentWallpaper = pick.path;
+        Settings.save();
+        // apply the wallpaper via the user's wallCommand (verse-wallpaper by
+        // default), same path as LauncherWindow.runWallCommand
+        Quickshell.execDetached(["bash", "-c", `
+            export PATH="$HOME/.local/bin:$PATH"
+            WALL='$1' BLUR='$2'
+            export WALL BLUR
+            exec setsid -w bash -c "$3" >/dev/null 2>&1
+        `, "_", pick.path, pick.blur || "", Settings.wallCommand]);
+        Theme.sampleWallpaper();
     }
 
     Connections {

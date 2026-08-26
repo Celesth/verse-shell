@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Io
+import Quickshell.Services.SystemTray
 import "root:/config"
 import "root:/launcher"
 import "root:/services"
@@ -58,65 +59,71 @@ PanelWindow {
             anchors.leftMargin: 14
             anchors.rightMargin: 14
 
-            // ── launcher button ──
-            Rectangle {
-                id: launcherBtn
+            // ── left group ──
+            Row {
+                id: leftGroup
                 anchors.verticalCenter: parent.verticalCenter
-                width: 24; height: 24
-                radius: height / 2
-                color: launcherArea.containsMouse
-                    ? Qt.alpha(Theme.accent, 0.18)
-                    : Qt.alpha(Theme.fg, 0.08)
+                anchors.left: parent.left
+                spacing: 8
 
-                Behavior on color { ColorAnimation { duration: 120 } }
+                // ── launcher button ──
+                Rectangle {
+                    id: launcherBtn
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 24; height: 24
+                    radius: height / 2
+                    color: launcherArea.containsMouse
+                        ? Qt.alpha(Theme.accent, 0.18)
+                        : Qt.alpha(Theme.fg, 0.08)
 
-                Text {
-                    anchors.centerIn: parent
-                    text: "A"
-                    font.pixelSize: Theme.fontSize(12)
-                    font.weight: Font.Bold
-                    color: Theme.accent
-                    opacity: launcherArea.containsMouse ? 1 : 0.7
+                    Behavior on color { ColorAnimation { duration: 120 } }
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "A"
+                        font.pixelSize: Theme.fontSize(12)
+                        font.weight: Font.Bold
+                        color: Theme.accent
+                        opacity: launcherArea.containsMouse ? 1 : 0.7
+                    }
+
+                    MouseArea {
+                        id: launcherArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: LauncherState.barAppsOpen = !LauncherState.barAppsOpen
+                    }
                 }
 
-                MouseArea {
-                    id: launcherArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: LauncherState.barAppsOpen = !LauncherState.barAppsOpen
+                Rectangle {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 1; height: 14
+                    color: Qt.alpha(Theme.muted, 0.2)
                 }
-            }
 
-            Rectangle {
-                id: sep1
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.left: launcherBtn.right
-                anchors.leftMargin: 8
-                width: 1; height: 14
-                color: Qt.alpha(Theme.muted, 0.2)
-            }
-
-            // ── workspaces ──
-            Workspaces {
-                id: workspaces
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.left: sep1.right
-                anchors.leftMargin: 8
+                // ── workspaces ──
+                Workspaces {
+                    id: workspaces
+                    anchors.verticalCenter: parent.verticalCenter
+                }
             }
 
             // ── center: active window title ──
             ScrambleText {
                 id: activeTitle
                 anchors.verticalCenter: parent.verticalCenter
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: Math.min(parent.width * 0.4, implicitWidth + 20)
+                anchors.left: leftGroup.right
+                anchors.leftMargin: 12
+                anchors.right: rightGroup.left
+                anchors.rightMargin: 12
                 content: activeWindow.title || ""
                 color: Theme.muted
                 font.pixelSize: Theme.fontSize(12)
                 font.family: Theme.fontFamily
                 elide: Text.ElideRight
                 maximumLineCount: 1
+                horizontalAlignment: Text.AlignHCenter
                 scrambleSection: "bar"
                 followsPane: false
                 replayOnChange: true
@@ -128,68 +135,26 @@ PanelWindow {
             }
 
             // ── right group ──
-
-            Item {
-                id: clock
+            Row {
+                id: rightGroup
                 anchors.verticalCenter: parent.verticalCenter
-                anchors.right: sep2.left
-                anchors.rightMargin: 8
-                implicitWidth: clockRow.implicitWidth
-                implicitHeight: 20
+                anchors.right: parent.right
+                spacing: 8
+
+                QsMenuAnchor {
+                    id: trayMenuAnchor
+                    anchor.window: root.Window.window
+                }
 
                 property string timeStr: ""
                 property string dateStr: ""
-
-                Row {
-                    id: clockRow
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 6
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "\ue425"
-                        font.family: Icons.family
-                        font.pixelSize: Theme.fontSize(10)
-                        color: Qt.alpha(Theme.muted, 0.6)
-                    }
-
-                    ScrambleText {
-                        anchors.verticalCenter: parent.verticalCenter
-                        content: clock.timeStr
-                        color: Theme.fg
-                        font.pixelSize: Theme.fontSize(12)
-                        font.family: Theme.fontFamily
-                        scrambleSection: "bar"
-                        followsPane: false
-                        replayOnChange: true
-                    }
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "\u00b7"
-                        color: Qt.alpha(Theme.muted, 0.4)
-                        font.pixelSize: Theme.fontSize(12)
-                        font.family: Theme.fontFamily
-                    }
-
-                    ScrambleText {
-                        anchors.verticalCenter: parent.verticalCenter
-                        content: clock.dateStr
-                        color: Qt.alpha(Theme.muted, 0.7)
-                        font.pixelSize: Theme.fontSize(11)
-                        font.family: Theme.fontFamily
-                        scrambleSection: "bar"
-                        followsPane: false
-                        replayOnChange: true
-                    }
-                }
 
                 Timer {
                     interval: 1000
                     repeat: true
                     running: true
-                    onTriggered: clock.updateTime()
-                    Component.onCompleted: clock.updateTime()
+                    onTriggered: rightGroup.updateTime()
+                    Component.onCompleted: rightGroup.updateTime()
                 }
 
                 function updateTime() {
@@ -198,55 +163,165 @@ PanelWindow {
                     dateStr = now.toLocaleDateString(Qt.locale(), "ddd, MMM d, yyyy");
                 }
 
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        const now = new Date();
-                        const full = now.toLocaleDateString(Qt.locale(), "dddd, MMMM d, yyyy");
-                        Quickshell.execDetached(["notify-send", "-a", "verse", "-t", "5000", "Calendar", full]);
+                // ── tray icons ──
+                Repeater {
+                    model: SystemTray.items
+
+                    Rectangle {
+                        required property SystemTrayItem modelData
+
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 22; height: 22
+                        radius: 4
+                        color: trayIconArea.containsMouse
+                            ? Qt.alpha(Theme.accent, 0.15)
+                            : "transparent"
+
+                        Behavior on color { ColorAnimation { duration: 100 } }
+
+                        Image {
+                            anchors.centerIn: parent
+                            width: 16; height: 16
+                            source: modelData.icon
+                            smooth: false
+                            mipmap: false
+                            asynchronous: true
+                            fillMode: Image.PreserveAspectFit
+                        }
+
+                        MouseArea {
+                            id: trayIconArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
+                            cursorShape: Qt.PointingHandCursor
+
+                            onClicked: function(mouse) {
+                                if (mouse.button === Qt.LeftButton) {
+                                    modelData.activate();
+                                } else if (mouse.button === Qt.MiddleButton) {
+                                    modelData.secondaryActivate();
+                                } else if (mouse.button === Qt.RightButton) {
+                                    if (modelData.hasMenu) {
+                                        trayMenuAnchor.menu = modelData.menu;
+                                        trayMenuAnchor.open();
+                                    }
+                                }
+                            }
+
+                            onWheel: function(wheel) {
+                                const horizontal = Math.abs(wheel.angleDelta.x) > Math.abs(wheel.angleDelta.y);
+                                const delta = horizontal ? wheel.angleDelta.x : wheel.angleDelta.y;
+                                modelData.scroll(delta, horizontal);
+                            }
+                        }
                     }
                 }
-            }
 
-            Rectangle {
-                id: sep2
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.right: settingsBtn.left
-                anchors.rightMargin: 8
-                width: 1; height: 14
-                color: Qt.alpha(Theme.muted, 0.2)
-            }
-
-            Rectangle {
-                id: settingsBtn
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.right: parent.right
-                width: 24; height: 24
-                radius: height / 2
-                color: settingsArea.containsMouse
-                    ? Qt.alpha(Theme.accent, 0.18)
-                    : Qt.alpha(Theme.fg, 0.08)
-
-                Behavior on color { ColorAnimation { duration: 120 } }
-
-                Text {
-                    anchors.centerIn: parent
-                    text: Icons.settings
-                    font.family: Icons.family
-                    font.pixelSize: Theme.fontSize(12)
-                    color: Theme.accent
-                    opacity: settingsArea.containsMouse ? 1 : 0.7
+                Rectangle {
+                    visible: SystemTray.items.count > 0
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 1; height: 14
+                    color: Qt.alpha(Theme.muted, 0.2)
                 }
 
-                MouseArea {
-                    id: settingsArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        if (LauncherState.barAppsOpen) LauncherState.barAppsOpen = false;
-                        Quickshell.execDetached(["bash", "-c", "exec ~/Projects/dots-hyprland/verse/verse settings"]);
+                // ── clock ──
+                Item {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: clockRow.implicitWidth
+                    height: clockRow.implicitHeight
+
+                    Row {
+                        id: clockRow
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 6
+
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "\ue425"
+                            font.family: Icons.family
+                            font.pixelSize: Theme.fontSize(10)
+                            color: Qt.alpha(Theme.muted, 0.6)
+                        }
+
+                        ScrambleText {
+                            anchors.verticalCenter: parent.verticalCenter
+                            content: rightGroup.timeStr
+                            color: Theme.fg
+                            font.pixelSize: Theme.fontSize(12)
+                            font.family: Theme.fontFamily
+                            scrambleSection: "bar"
+                            followsPane: false
+                            replayOnChange: true
+                        }
+
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "\u00b7"
+                            color: Qt.alpha(Theme.muted, 0.4)
+                            font.pixelSize: Theme.fontSize(12)
+                            font.family: Theme.fontFamily
+                        }
+
+                        ScrambleText {
+                            anchors.verticalCenter: parent.verticalCenter
+                            content: rightGroup.dateStr
+                            color: Qt.alpha(Theme.muted, 0.7)
+                            font.pixelSize: Theme.fontSize(11)
+                            font.family: Theme.fontFamily
+                            scrambleSection: "bar"
+                            followsPane: false
+                            replayOnChange: true
+                        }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            const now = new Date();
+                            const full = now.toLocaleDateString(Qt.locale(), "dddd, MMMM d, yyyy");
+                            Quickshell.execDetached(["notify-send", "-a", "verse", "-t", "5000", "Calendar", full]);
+                        }
+                    }
+                }
+
+                Rectangle {
+                    id: sep3
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 1; height: 14
+                    color: Qt.alpha(Theme.muted, 0.2)
+                }
+
+                Rectangle {
+                    id: settingsBtn
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 24; height: 24
+                    radius: height / 2
+                    color: settingsArea.containsMouse
+                        ? Qt.alpha(Theme.accent, 0.18)
+                        : Qt.alpha(Theme.fg, 0.08)
+
+                    Behavior on color { ColorAnimation { duration: 120 } }
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: Icons.settings
+                        font.family: Icons.family
+                        font.pixelSize: Theme.fontSize(12)
+                        color: Theme.accent
+                        opacity: settingsArea.containsMouse ? 1 : 0.7
+                    }
+
+                    MouseArea {
+                        id: settingsArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (LauncherState.barAppsOpen) LauncherState.barAppsOpen = false;
+                            Quickshell.execDetached(["bash", "-c", "exec ~/Projects/dots-hyprland/verse/verse settings"]);
+                        }
                     }
                 }
             }

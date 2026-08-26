@@ -157,7 +157,7 @@ Singleton {
             command -v matugen >/dev/null || { echo NOMATUGEN; exit 0; }
             img="$1"
             [ -n "$img" ] || exit 0
-            matugen image "$img" --json hex --dry-run --prefer saturation 2>/dev/null`, "_", Wallpapers.matugenSource]
+            matugen image "$img" --json hex --prefer saturation 2>/dev/null`, "_", Wallpapers.matugenSource]
 
         stdout: StdioCollector {
             onStreamFinished: {

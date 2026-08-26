@@ -30,14 +30,18 @@ case "$ext" in
         # check if hyprpaper is already running with our config
         if pgrep -x hyprpaper >/dev/null 2>&1; then
             # try IPC first
-            hyprctl hyprpaper wallpaper "$MONITOR, $WALL" 2>/dev/null && exit 0
+            hyprctl hyprpaper wallpaper "$MONITOR, $WALL" 2>/dev/null && {
+                # IPC succeeded — still run matugen below
+                MATUGEN_OK=1
+            }
         fi
 
-        # IPC failed or hyprpaper not running — write config and restart
-        pkill hyprpaper 2>/dev/null || true
-        sleep 0.2
+        if [ "${MATUGEN_OK:-}" != "1" ]; then
+            # IPC failed or hyprpaper not running — write config and restart
+            pkill hyprpaper 2>/dev/null || true
+            sleep 0.2
 
-        cat > "$CONF" << EOF
+            cat > "$CONF" << EOF
 splash = false
 ipc = on
 
@@ -48,6 +52,13 @@ wallpaper {
 }
 EOF
 
-        setsid hyprpaper --config "$CONF" >/dev/null 2>&1 &
+            setsid hyprpaper --config "$CONF" >/dev/null 2>&1 &
+        fi
         ;;
 esac
+
+# generate matugen color scheme from the wallpaper — updates kitty, hyprland,
+# gtk, fuzzel, and any other template in ~/.config/matugen/config.toml
+if command -v matugen >/dev/null 2>&1; then
+    matugen image "$WALL" --json hex --prefer saturation >/dev/null 2>&1 || true
+fi

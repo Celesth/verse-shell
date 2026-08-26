@@ -198,7 +198,7 @@ JsonAdapter {
     // Off is deferral, not a cap: the pool still keeps a player once something
     // has opened it, so browsing every video ends up at the same memory having
     // paid the freeze for each. It only saves what is never looked at.
-    property bool preload: false
+    property bool preload: true
 
     property real dimOpacity: 0.4
     property string launchAnimation: "grow-top-left"
@@ -417,18 +417,24 @@ JsonAdapter {
             settings.scrambleSections = split;
             settings.save();
         }
+        // bar scramble is always on — ensure it survives any old config that
+        // might have saved it as false (e.g. before the textScramble migration
+        // added the explicit override). Runs before the textScramble migration
+        // below, which zeros every key.
+        if (settings.scrambleSections && settings.scrambleSections.bar !== true) {
+            const sections = Object.assign({}, settings.scrambleSections, { bar: true });
+            settings.scrambleSections = sections;
+            settings.save();
+        }
         if (settings.textScramble === false) {
             const sections = Object.assign({}, Defaults.scrambleSections, settings.scrambleSections);
             for (const surface of Object.keys(sections))
                 sections[surface] = false;
+            // bar is always on by default — the user never asked to disable
+            // it, and the zeroing loop above would clobber it otherwise
+            sections.bar = true;
             settings.scrambleSections = sections;
             settings.textScramble = true;
-            settings.save();
-        }
-        // add "bar" section for configs that predate it (default on)
-        if (settings.scrambleSections && !Object.prototype.hasOwnProperty.call(settings.scrambleSections, "bar")) {
-            const sections = Object.assign({}, settings.scrambleSections, { bar: true });
-            settings.scrambleSections = sections;
             settings.save();
         }
     }
