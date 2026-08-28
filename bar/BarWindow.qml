@@ -33,7 +33,7 @@ PanelWindow {
         id: barWrapper
         anchors.horizontalCenter: parent.horizontalCenter
         y: 8
-        width: Math.min(parent.width - 40, 900)
+        width: parent.width - 40
         height: 36
 
         Rectangle {
@@ -113,10 +113,8 @@ PanelWindow {
             ScrambleText {
                 id: activeTitle
                 anchors.verticalCenter: parent.verticalCenter
-                anchors.left: leftGroup.right
-                anchors.leftMargin: 12
-                anchors.right: rightGroup.left
-                anchors.rightMargin: 12
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: Math.min(parent.width * 0.35, implicitWidth + 20)
                 content: activeWindow.title || ""
                 color: Theme.muted
                 font.pixelSize: Theme.fontSize(12)
@@ -167,17 +165,24 @@ PanelWindow {
                 Repeater {
                     model: SystemTray.items
 
-                    Rectangle {
+                    Item {
                         required property SystemTrayItem modelData
 
-                        anchors.verticalCenter: parent.verticalCenter
                         width: 22; height: 22
-                        radius: 4
-                        color: trayIconArea.containsMouse
-                            ? Qt.alpha(Theme.accent, 0.15)
-                            : "transparent"
 
-                        Behavior on color { ColorAnimation { duration: 100 } }
+                        property bool hovered: false
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: 4
+                            color: parent.hovered
+                                ? Qt.alpha(Theme.accent, 0.18)
+                                : (modelData.status === Status.NeedsAttention
+                                    ? Qt.alpha(Theme.accent, 0.12)
+                                    : "transparent")
+
+                            Behavior on color { ColorAnimation { duration: 100 } }
+                        }
 
                         Image {
                             anchors.centerIn: parent
@@ -189,6 +194,13 @@ PanelWindow {
                             fillMode: Image.PreserveAspectFit
                         }
 
+                        TrayPopup {
+                            anchorItem: parent
+                            tipTitle: modelData.title || modelData.tooltipTitle || modelData.id
+                            tipHasMenu: modelData.hasMenu
+                            hovered: parent.hovered
+                        }
+
                         MouseArea {
                             id: trayIconArea
                             anchors.fill: parent
@@ -196,8 +208,11 @@ PanelWindow {
                             acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
                             cursorShape: Qt.PointingHandCursor
 
+                            onEntered: parent.hovered = true
+                            onExited: parent.hovered = false
+
                             onClicked: function(mouse) {
-                                if (mouse.button === Qt.LeftButton) {
+                                if (mouse.button === Qt.LeftButton && !modelData.onlyMenu) {
                                     modelData.activate();
                                 } else if (mouse.button === Qt.MiddleButton) {
                                     modelData.secondaryActivate();
@@ -212,7 +227,7 @@ PanelWindow {
                             onWheel: function(wheel) {
                                 const horizontal = Math.abs(wheel.angleDelta.x) > Math.abs(wheel.angleDelta.y);
                                 const delta = horizontal ? wheel.angleDelta.x : wheel.angleDelta.y;
-                                modelData.scroll(delta, horizontal);
+                                if (delta !== 0) modelData.scroll(delta, horizontal);
                             }
                         }
                     }

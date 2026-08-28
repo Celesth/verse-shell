@@ -1,3 +1,4 @@
+//@ pragma UseQApplication
 // verse - a desktop shell for wlr-layer-shell compositors.
 // Adapted from pibble (https://github.com/not-pibble/pibble) by Kian Blakley.
 // Original code licensed under GPLv3; this derivative respects that license.
