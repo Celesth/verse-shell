@@ -17,10 +17,10 @@ Item {
     property int activeId: 1
     property var occupied: []
 
-    readonly property int cell: 18
-    readonly property int idleGem: 9
-    readonly property int activeGem: 14
-    readonly property int gap: 5
+    readonly property int cell: 14
+    readonly property int idleGem: 7
+    readonly property int activeGem: 11
+    readonly property int gap: 4
 
     Process {
         id: hyprctl

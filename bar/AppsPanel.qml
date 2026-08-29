@@ -15,8 +15,8 @@ PanelWindow {
         top: true
         left: true
         right: true
+        bottom: true
     }
-    height: 320
     visible: appsOpen
 
     color: "transparent"
@@ -38,12 +38,20 @@ PanelWindow {
         }
     }
 
+    // click outside the panel closes it
+    MouseArea {
+        anchors.fill: parent
+        z: 0
+        onClicked: LauncherState.barAppsOpen = false
+    }
+
     // centered panel
     Item {
         id: panelWrapper
         anchors.centerIn: parent
         width: Math.min(parent.width - 40, 420)
-        height: parent.height - 40
+        height: 320
+        z: 1
 
         // background
         Rectangle {
