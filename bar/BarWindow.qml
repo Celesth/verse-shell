@@ -80,11 +80,11 @@ PanelWindow {
 
                     Text {
                         anchors.centerIn: parent
-                        text: "A"
-                        font.pixelSize: Theme.fontSize(12)
-                        font.weight: Font.Bold
+                        text: "\u2726"
+                        font.family: Theme.fontFamily
+                        font.pixelSize: Theme.fontSize(18)
                         color: Theme.accent
-                        opacity: launcherArea.containsMouse ? 1 : 0.7
+                        opacity: launcherArea.containsMouse ? 1 : 0.75
                     }
 
                     MouseArea {
