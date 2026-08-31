@@ -150,7 +150,7 @@ list_pages() {
     # the readable names, not the panes' internal ids ("walls"/"clips" -
     # settings keys that can't be renamed); LauncherState.resolvePageArg
     # maps these back, and still takes the internal ids too
-    ids="clock, apps, wallpapers, clipboard"
+    ids="clock, apps, wallpapers, clipboard, media"
     if [ -f "$settings" ]; then
         # ids are namespaced "folder:name" (see CustomPages.dir in
         # services/CustomPages.qml); the prefix is internal, so strip it here -

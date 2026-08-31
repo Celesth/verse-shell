@@ -107,6 +107,12 @@ PanelWindow {
                     id: workspaces
                     anchors.verticalCenter: parent.verticalCenter
                 }
+
+                // ── now playing (MPRIS) ──
+                MediaPlayer {
+                    id: mediaPlayer
+                    anchors.verticalCenter: parent.verticalCenter
+                }
             }
 
             // ── center: active window title ──

@@ -6,7 +6,7 @@
     "barExclusive": true,
     "barPadding": 6,
     "batteryAlertLevel": 5,
-    "bgBlur": "xray",
+    "bgBlur": "compositor",
     "clipsCols": 4,
     "clipsMax": 120,
     "clipsRows": 3,
@@ -15,7 +15,7 @@
         "date": true,
         "weather": true
     },
-    "currentWallpaper": "/home/celesth/Pictures/Wallpapers/scathach.jpg",
+    "currentWallpaper": "/home/celesth/Pictures/Wallpapers/Lucilla Cinema V2 @kurodukimajaja.jpg",
     "customAccent": "#cfcfcf",
     "customFg": "#f0f0f0",
     "customMuted": "#8a8a8a",
@@ -48,7 +48,7 @@
         "reverseCycle": "Shift+Tab",
         "settings": "Ctrl+S"
     },
-    "launchAnimation": "grow-top-left",
+    "launchAnimation": "none",
     "notifAnim": "pop",
     "notifStyle": "bubble",
     "notifTimeout": 5000,
@@ -63,9 +63,10 @@
         "clips"
     ],
     "pages": {
-        "apps": true,
+        "apps": false,
         "clips": true,
         "clock": true,
+        "media": true,
         "walls": true
     },
     "powerAnimations": true,

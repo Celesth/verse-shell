@@ -4,23 +4,23 @@ import Quickshell.Io
 import "root:/config"
 import "root:/services"
 
-// A unique per-workspace indicator: a row of diamond "gems" sitting on a thin
-// recessed rail. The active workspace is a solid accent gem, occupied ones are
-// tinted with an accent edge, and empty slots are just hollow outlines - so
-// what's busy and what's focused reads at a glance.
+// Workspace indicator: a row of numbered pill segments. The active workspace
+// lights up in the accent colour with a bold number; occupied workspaces show
+// a dimmer filled pill, empty ones a hollow pill. Hovering a segment tint it
+// and clicking switches there.
 Item {
     id: root
 
-    implicitWidth: row.implicitWidth
-    implicitHeight: 20
+    implicitWidth: pills.implicitWidth
+    implicitHeight: root.pillH
 
     property int activeId: 1
     property var occupied: []
 
-    readonly property int cell: 14
-    readonly property int idleGem: 7
-    readonly property int activeGem: 11
-    readonly property int gap: 4
+    readonly property int count: 10
+    readonly property real pillH: 22
+    readonly property real pillW: 24
+    readonly property real gap: 3
 
     Process {
         id: hyprctl
@@ -50,70 +50,67 @@ Item {
         Component.onCompleted: hyprctl.running = true
     }
 
+    readonly property var jpNumerals: ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]
+
     function switchTo(id) {
         Quickshell.execDetached(["hyprctl", "dispatch", "workspace", "" + id]);
     }
 
-    // thin recessed rail behind the gems
-    Rectangle {
-        id: rail
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.verticalCenter: parent.verticalCenter
-        width: row.implicitWidth
-        height: 3
-        radius: Theme.radius(1.5)
-        color: Qt.alpha(Theme.muted, 0.14)
-    }
-
     Row {
-        id: row
-        anchors.verticalCenter: parent.verticalCenter
+        id: pills
         spacing: root.gap
 
         Repeater {
-            model: 10
+            model: root.count
 
-            // each slot: a rotating square (diamond) that fills when focused
             Item {
                 required property int index
 
                 readonly property int wsId: index + 1
                 readonly property bool isActive: wsId === root.activeId
                 readonly property bool isOccupied: root.occupied.indexOf(wsId) !== -1
+                readonly property bool hovered: hover.containsMouse
 
-                width: root.cell
-                height: root.cell
+                width: root.pillW
+                height: root.pillH
 
                 Rectangle {
                     anchors.centerIn: parent
-                    rotation: 45
-
-                    width: parent.isActive ? root.activeGem : root.idleGem
-                    height: width
-                    radius: 2
-
-                    color: parent.isActive
+                    width: root.pillW
+                    height: root.pillH
+                    radius: Theme.radius(root.pillH / 4)
+                    color: isActive
                         ? Theme.accent
-                        : (parent.isOccupied ? Qt.alpha(Theme.accent, 0.4) : "transparent")
+                        : (isOccupied
+                            ? Qt.alpha(Theme.fg, hovered ? 0.32 : 0.22)
+                            : (hovered ? "transparent" : "transparent"))
+                    border.width: (isActive || isOccupied) ? 0 : 1
+                    border.color: hovered
+                        ? Qt.alpha(Theme.fg, 0.5)
+                        : Qt.alpha(Theme.fg, 0.28)
 
-                    border.color: parent.isActive
-                        ? Qt.lighter(Theme.accent, 1.2)
-                        : (parent.isOccupied
-                            ? Qt.alpha(Theme.accent, 0.75)
-                            : Qt.alpha(Theme.muted, 0.5))
-                    border.width: parent.isActive ? 0 : 1
+                    Text {
+                        anchors.centerIn: parent
+                        text: root.jpNumerals[wsId] ?? ""
+                        font.pixelSize: Theme.fontSize(11)
+                        font.bold: isActive
+                        font.family: Theme.fontFamily
+                        color: isActive
+                            ? Theme.fg
+                            : (hovered ? Theme.fg : Qt.alpha(Theme.fg, 0.72))
+                        opacity: isActive ? 1 : (isOccupied ? 0.95 : 0.8)
+                    }
 
-                    Behavior on width { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-                    Behavior on height { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
                     Behavior on color { ColorAnimation { duration: 150 } }
                     Behavior on border.color { ColorAnimation { duration: 150 } }
+                }
 
-                    MouseArea {
-                        anchors.fill: parent
-                        anchors.margins: -4
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.switchTo(parent.parent.wsId)
-                    }
+                MouseArea {
+                    id: hover
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.switchTo(wsId)
                 }
             }
         }

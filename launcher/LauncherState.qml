@@ -165,7 +165,7 @@ Singleton {
     // upload/trash/disk sync, so this binding is stable the rest of
     // the time.
     readonly property var pageIds: {
-        const def = ["clock", "apps", "walls", "clips"];
+        const def = ["clock", "apps", "walls", "clips", "media"];
         // custom pages before the built-in four: this is what the
         // "missing id" top-up in orderedPages below falls back to
         // whenever it has to place one without a captured position

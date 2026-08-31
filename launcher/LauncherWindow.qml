@@ -253,6 +253,7 @@ PanelWindow {
         wallpapersPage.resetEntrance();
         clipboardPage.resetEntrance();
         settingsPane.resetEntrance();
+        mediaPage.resetEntrance();
         for (let i = 0; i < customPages.count; i++) {
             const host = customPages.itemAt(i);
             if (host)
@@ -1170,6 +1171,10 @@ PanelWindow {
             }
 
         ClockPage {}
+
+        MediaPage {
+            id: mediaPage
+        }
 
         AppsPage {
             id: appsPage

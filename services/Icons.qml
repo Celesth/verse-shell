@@ -58,4 +58,17 @@ Singleton {
     readonly property string arrowRight: "\ue5c8"
     readonly property string arrowUp: "\ue5d8"
     readonly property string arrowDown: "\ue5db"
+    // media playback (MPRIS controls)
+    readonly property string playArrow: "\ue037"
+    readonly property string pause: "\ue034"
+    readonly property string skipPrevious: "\ue045"
+    readonly property string skipNext: "\ue044"
+    readonly property string stop: "\ue047"
+    readonly property string volumeUp: "\ue050"
+    readonly property string shuffle: "\ue043"
+    readonly property string repeat: "\ue040"
+    readonly property string musicNote: "\ue405"
+    readonly property string fullscreen: "\ue5d0"
+    readonly property string logout: "\ue9ba"
+    readonly property string browser: "\ue89b"
 }

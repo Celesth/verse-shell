@@ -73,7 +73,7 @@ Item {
         if (idx !== LauncherState.orderedPages.indexOf(draggedId))
             LauncherState.movePage(draggedId, idx);
     }
-    readonly property var defLabels: ({ clock: "Clock", apps: "Apps", walls: "Wallpapers", clips: "Clipboard" })
+    readonly property var defLabels: ({ clock: "Clock", apps: "Apps", walls: "Wallpapers", clips: "Clipboard", media: "Media" })
     function pageLabel(id) {
         if (id === "__add_folder__")
             return "Add a page…";
