@@ -86,7 +86,7 @@
     },
     "settingsDirty": false,
     "singleClickActivate": false,
-    "textScramble": true,
+    "textScramble": false,
     "theme": "matugen",
     "uploadedPages": [
     ],
@@ -104,6 +104,7 @@
     "wallCommand": "export PATH=\"$HOME/.local/bin:$PATH\"; verse-wallpaper",
     "wallpaperDir": "~/Pictures/Wallpapers",
     "wallpaperLive": true,
+    "wallpaperParallax": true,
     "wallpaperStyle": "grid",
     "wallsCols": 3,
     "wallsRows": 3,

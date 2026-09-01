@@ -14,6 +14,7 @@ import "root:/launcher"
 import "root:/services"
 import "root:/startup"
 import "root:/bar"
+import "root:/wallpaper"
 
 // This file is only the wiring: it binds the three persisted stores to disk,
 // puts up the four windows, and exposes the IPC the `verse` script talks to.
@@ -45,6 +46,7 @@ ShellRoot {
         id: launcher
     }
     BarWindow {}
+    WallpaperWindow {}
     AppsPanel {}
     VolumeOsd {}
     NotificationFlyout {}

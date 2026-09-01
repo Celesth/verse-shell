@@ -40,6 +40,7 @@ Column {
     SettingRow { key: "barPadding"; label: "Bar padding"; hint: "extra gap between bar and windows" }
     SettingRow { key: "hyprBorder"; label: "Window border"; hint: "0 = no borders" }
     SettingRow { key: "hyprRounding"; label: "Window corners"; hint: "0 = no rounding" }
+    SettingRow { key: "wallpaperParallax"; label: "Wallpaper parallax"; hint: "zooms the wallpaper in and pans it to follow the cursor" }
     SettingRow { key: "textScramble"; label: "Text scramble"; hint: "character scramble effect on text" }
     SettingRow { key: "fontFamily"; label: "Font" }
     SettingRow { key: "fontScale"; label: "Font size" }

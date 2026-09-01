@@ -163,6 +163,8 @@ Singleton {
             return Settings.wallpaperStyle === "carousel-flat" ? "carousel" : Settings.wallpaperStyle === "carousel" ? "parallax carousel" : Settings.wallpaperStyle;
         case "wallpaperLive":
             return Settings.wallpaperLive ? "on" : "off";
+        case "wallpaperParallax":
+            return Settings.wallpaperParallax ? "on" : "off";
         case "barEnabled":
             return Settings.barEnabled ? "on" : "off";
         case "barExclusive":
@@ -260,6 +262,9 @@ Singleton {
             break;
         case "wallpaperLive":
             Settings.wallpaperLive = !Settings.wallpaperLive;
+            break;
+        case "wallpaperParallax":
+            Settings.wallpaperParallax = !Settings.wallpaperParallax;
             break;
         case "barEnabled":
             Settings.barEnabled = !Settings.barEnabled;
@@ -448,6 +453,9 @@ Singleton {
             break;
         case "wallpaperLive":
             Settings.wallpaperLive = true;
+            break;
+        case "wallpaperParallax":
+            Settings.wallpaperParallax = Defaults.wallpaperParallax;
             break;
         case "barEnabled":
             Settings.barEnabled = true;
