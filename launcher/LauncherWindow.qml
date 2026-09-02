@@ -678,6 +678,11 @@ PanelWindow {
         }
     }
     function runWallCommand(wall) {
+        // with the Quickshell parallax wallpaper on, the compositor's own
+        // wallpaper (hyprpaper/mpvpaper) is what shows beneath it - drop it so
+        // a newly chosen wallpaper doesn't linger as a second, stale copy
+        if (Settings.wallpaperParallax)
+            Quickshell.execDetached(["bash", "-c", "pkill hyprpaper 2>/dev/null; pkill mpvpaper 2>/dev/null; true"]);
         pendingWall = wall;
         // $WALL and $BLUR are exported for the command to template with.
         // $BLUR is the cached blurred variant the scan already resolved
