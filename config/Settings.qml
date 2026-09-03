@@ -125,6 +125,7 @@ JsonAdapter {
     // blur region traced to match it is a true ellipse (see
     // LauncherState.revealBlurDiameter).
     property bool roundedCorners: true
+    property bool glassEffect: Defaults.glassEffect
     property real fontScale: 1.0
     property string fontFamily: ""
     property string iconTheme: ""

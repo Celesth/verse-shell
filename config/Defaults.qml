@@ -11,6 +11,7 @@ QtObject {
     readonly property string wallCommand: 'export PATH="$HOME/.local/bin:$PATH"; verse-wallpaper'
     readonly property string wallpaperDir: "~/Pictures/Wallpapers"
     readonly property bool wallpaperParallax: false
+    readonly property bool glassEffect: false
 
     readonly property var pages: ({ clock: true, apps: true, walls: true, clips: true, media: true })
     readonly property var pageOrder: ["clock", "apps", "walls", "clips", "media"]

@@ -39,7 +39,9 @@ PanelWindow {
         Rectangle {
             anchors.fill: parent
             radius: Math.min(height / 2, 14)
-            color: Theme.surface
+            color: Settings.glassEffect ? Qt.alpha(Theme.surface, 0.55) : Theme.surface
+            border.width: Settings.glassEffect ? 1 : 0
+            border.color: Settings.glassEffect ? Qt.alpha(Theme.fg, 0.12) : "transparent"
 
             Rectangle {
                 anchors.top: parent.top
@@ -49,7 +51,7 @@ PanelWindow {
                 anchors.right: parent.right
                 anchors.rightMargin: parent.radius
                 height: 1
-                color: Qt.alpha(Theme.fg, 0.06)
+                color: Settings.glassEffect ? Qt.alpha(Theme.fg, 0.10) : Qt.alpha(Theme.fg, 0.06)
             }
         }
 

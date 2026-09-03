@@ -19,7 +19,7 @@ Item {
     Component.onCompleted: root.latchScramble()
     readonly property string scrambleSection: "settings"
 
-    readonly property var tabOrder: ["general", "pages", "animations", "keybindings", "flyouts"].concat(LauncherState.customSettingsTabs.map(t => t.pageId))
+    readonly property var tabOrder: ["general", "appearance", "pages", "animations", "keybindings", "flyouts"].concat(LauncherState.customSettingsTabs.map(t => t.pageId))
     readonly property int resolvedTabIndex: tabOrder.indexOf(LauncherState.settingsTab)
     property int tabIndex: 0
     onResolvedTabIndexChanged: if (resolvedTabIndex >= 0)
@@ -60,7 +60,9 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: Theme.radius(14)
-        color: Qt.alpha(Theme.surface, 0.92)
+        color: Settings.glassEffect ? Qt.alpha(Theme.surface, 0.65) : Qt.alpha(Theme.surface, 0.92)
+        border.width: Settings.glassEffect ? 1 : 0
+        border.color: Settings.glassEffect ? Qt.alpha(Theme.fg, 0.12) : "transparent"
     }
 
     // ─── sidebar ───
@@ -73,6 +75,7 @@ Item {
 
         property var stagedTabs: [
             { id: "general", label: "General", custom: false, phase: "in" },
+            { id: "appearance", label: "Appearance", custom: false, phase: "in" },
             { id: "pages", label: "Pages", custom: false, phase: "in" },
             { id: "animations", label: "Animations", custom: false, phase: "in" },
             { id: "keybindings", label: "Navigation", custom: false, phase: "in" },
@@ -234,7 +237,7 @@ Item {
                 visible: x > -contentArea.innerWidth * 1.5 && x < contentArea.innerWidth * 1.5
                 width: contentArea.innerWidth
                 spacing: 14
-                PagesTab { width: parent.width; slideIndex: 1; activeIndex: root.tabIndex; x: 0 }
+                AppearanceTab { width: parent.width; slideIndex: 1; activeIndex: root.tabIndex; x: 0 }
             }
             Column {
                 id: col2
@@ -243,7 +246,7 @@ Item {
                 visible: x > -contentArea.innerWidth * 1.5 && x < contentArea.innerWidth * 1.5
                 width: contentArea.innerWidth
                 spacing: 14
-                AnimationsTab { width: parent.width; slideIndex: 2; activeIndex: root.tabIndex; x: 0 }
+                PagesTab { width: parent.width; slideIndex: 2; activeIndex: root.tabIndex; x: 0 }
             }
             Column {
                 id: col3
@@ -252,7 +255,7 @@ Item {
                 visible: x > -contentArea.innerWidth * 1.5 && x < contentArea.innerWidth * 1.5
                 width: contentArea.innerWidth
                 spacing: 14
-                NavigationTab { width: parent.width; slideIndex: 3; activeIndex: root.tabIndex; x: 0 }
+                AnimationsTab { width: parent.width; slideIndex: 3; activeIndex: root.tabIndex; x: 0 }
             }
             Column {
                 id: col4
@@ -261,7 +264,16 @@ Item {
                 visible: x > -contentArea.innerWidth * 1.5 && x < contentArea.innerWidth * 1.5
                 width: contentArea.innerWidth
                 spacing: 14
-                FlyoutsTab { width: parent.width; slideIndex: 4; activeIndex: root.tabIndex; x: 0 }
+                NavigationTab { width: parent.width; slideIndex: 4; activeIndex: root.tabIndex; x: 0 }
+            }
+            Column {
+                id: col5
+                x: (5 - root.tabIndex) * contentArea.innerWidth
+                Behavior on x { NumberAnimation { duration: Anim.menu(420); easing.type: Easing.OutCubic } }
+                visible: x > -contentArea.innerWidth * 1.5 && x < contentArea.innerWidth * 1.5
+                width: contentArea.innerWidth
+                spacing: 14
+                FlyoutsTab { width: parent.width; slideIndex: 5; activeIndex: root.tabIndex; x: 0 }
             }
             Repeater {
                 id: customCols
@@ -288,6 +300,7 @@ Item {
                 case 2: scrollFlick.activeCol = col2; break;
                 case 3: scrollFlick.activeCol = col3; break;
                 case 4: scrollFlick.activeCol = col4; break;
+                case 5: scrollFlick.activeCol = col5; break;
                 default: scrollFlick.activeCol = col0; break;
                 }
             }

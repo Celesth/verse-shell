@@ -115,6 +115,8 @@ Singleton {
             return root.styleName(Settings.animStyle);
         case "roundedCorners":
             return Settings.roundedCorners ? "on" : "off";
+        case "glassEffect":
+            return Settings.glassEffect ? "on" : "off";
         case "fontScale":
             return Math.round(Settings.fontScale * 100) + "%";
         case "dimOpacity":
@@ -192,6 +194,9 @@ Singleton {
             break;
         case "roundedCorners":
             Settings.roundedCorners = !Settings.roundedCorners;
+            break;
+        case "glassEffect":
+            Settings.glassEffect = !Settings.glassEffect;
             break;
         case "fontScale":
             Settings.fontScale = Math.max(0.7, Math.min(1.6, Math.round((Settings.fontScale + dir * 0.1) * 100) / 100));
@@ -363,6 +368,9 @@ Singleton {
             break;
         case "roundedCorners":
             Settings.roundedCorners = true;
+            break;
+        case "glassEffect":
+            Settings.glassEffect = false;
             break;
         case "fontScale":
             Settings.fontScale = 1.0;

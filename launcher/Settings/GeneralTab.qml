@@ -34,18 +34,7 @@ Column {
         hint: "ext-background-effect requires compositor support"
     }
     SettingRow { key: "dimOpacity"; label: "Background opacity" }
-    SettingRow { key: "roundedCorners"; label: "Rounded corners" }
-    SettingRow { key: "barEnabled"; label: "Show bar" }
-    SettingRow { key: "barExclusive"; label: "Bar reserves space" }
-    SettingRow { key: "barPadding"; label: "Bar padding"; hint: "extra gap between bar and windows" }
-    SettingRow { key: "hyprBorder"; label: "Window border"; hint: "0 = no borders" }
-    SettingRow { key: "hyprRounding"; label: "Window corners"; hint: "0 = no rounding" }
     SettingRow { key: "wallpaperParallax"; label: "Wallpaper parallax"; hint: "zooms the wallpaper in and pans it to follow the cursor" }
-    SettingRow { key: "textScramble"; label: "Text scramble"; hint: "character scramble effect on text" }
-    SettingRow { key: "fontFamily"; label: "Font" }
-    SettingRow { key: "fontScale"; label: "Font size" }
-    ThemeRow {}
-    ColorPickerRow {}
 
     // bundles version/build info, this run's recent log, and
     // the latest crash report (if any) for pasting into a

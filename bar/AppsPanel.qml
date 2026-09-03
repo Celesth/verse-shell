@@ -57,7 +57,9 @@ PanelWindow {
         Rectangle {
             anchors.fill: parent
             radius: 14
-            color: Theme.surface
+            color: Settings.glassEffect ? Qt.alpha(Theme.surface, 0.55) : Theme.surface
+            border.width: Settings.glassEffect ? 1 : 0
+            border.color: Settings.glassEffect ? Qt.alpha(Theme.fg, 0.12) : "transparent"
 
             Rectangle {
                 anchors.top: parent.top
@@ -67,7 +69,7 @@ PanelWindow {
                 anchors.right: parent.right
                 anchors.rightMargin: parent.radius
                 height: 1
-                color: Qt.alpha(Theme.fg, 0.06)
+                color: Settings.glassEffect ? Qt.alpha(Theme.fg, 0.10) : Qt.alpha(Theme.fg, 0.06)
             }
         }
 
@@ -253,7 +255,7 @@ PanelWindow {
                 height: 20
                 visible: flick.contentY > 0
                 gradient: Gradient {
-                    GradientStop { position: 0.0; color: Theme.surface }
+                    GradientStop { position: 0.0; color: Settings.glassEffect ? Qt.alpha(Theme.surface, 0.55) : Theme.surface }
                     GradientStop { position: 1.0; color: "transparent" }
                 }
             }
@@ -268,7 +270,7 @@ PanelWindow {
                 visible: flick.contentY < flick.contentHeight - flick.height
                 gradient: Gradient {
                     GradientStop { position: 0.0; color: "transparent" }
-                    GradientStop { position: 1.0; color: Theme.surface }
+                    GradientStop { position: 1.0; color: Settings.glassEffect ? Qt.alpha(Theme.surface, 0.55) : Theme.surface }
                 }
             }
         }

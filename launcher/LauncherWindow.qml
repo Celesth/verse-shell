@@ -948,7 +948,9 @@ PanelWindow {
         }
             Rectangle {
                 anchors.fill: parent
-                color: Qt.alpha(Theme.surface, Settings.dimOpacity)
+                color: Settings.glassEffect ? Qt.alpha(Theme.surface, Settings.dimOpacity * 0.6) : Qt.alpha(Theme.surface, Settings.dimOpacity)
+                border.width: Settings.glassEffect ? 1 : 0
+                border.color: Settings.glassEffect ? Qt.alpha(Theme.fg, 0.10) : "transparent"
             }
             // Background click-catcher; also the scroll-wheel path. Wheel
             // events land here from anywhere on screen: MouseAreas ignore
