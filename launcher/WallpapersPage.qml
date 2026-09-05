@@ -26,12 +26,30 @@ Item {
         carouselView.resetEntrance();
     }
 
-    WallpaperGrid {
-        id: grid
+    // The two selectors sit in a fade-out container so that when the detail
+    // card opens, the surrounding wallpapers dissolve away (leaving the
+    // launcher's own backdrop, not a black scrim) instead of staying visible
+    // around the card. Container-level so the entrance animations the grid
+    // and carousel run internally aren't fought by this binding.
+    Item {
+        id: selectors
+        anchors.fill: parent
+        opacity: LauncherState.detailWall ? 0 : 1
+        Behavior on opacity {
+            NumberAnimation { duration: Anim.duration; easing.type: Easing.OutCubic }
+        }
+
+        WallpaperGrid {
+            id: grid
+        }
+
+        WallpaperCarousel {
+            id: carouselView
+        }
     }
 
-    WallpaperCarousel {
-        id: carouselView
+    WallpaperDetailCard {
+        pane: root
     }
 
     // Wallpaper empty state: shared between the tiles grid and the

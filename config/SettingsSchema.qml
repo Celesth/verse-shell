@@ -167,6 +167,8 @@ Singleton {
             return Settings.wallpaperLive ? "on" : "off";
         case "wallpaperParallax":
             return Settings.wallpaperParallax ? "on" : "off";
+        case "wallpaperFit":
+            return Settings.wallpaperFit === "fit" ? "fit" : Settings.wallpaperFit;
         case "barEnabled":
             return Settings.barEnabled ? "on" : "off";
         case "barExclusive":
@@ -270,6 +272,9 @@ Singleton {
             break;
         case "wallpaperParallax":
             Settings.wallpaperParallax = !Settings.wallpaperParallax;
+            break;
+        case "wallpaperFit":
+            Settings.wallpaperFit = root.cycle(Settings.wallpaperFit, ["crop", "fit", "center", "original"], dir);
             break;
         case "barEnabled":
             Settings.barEnabled = !Settings.barEnabled;
@@ -464,6 +469,9 @@ Singleton {
             break;
         case "wallpaperParallax":
             Settings.wallpaperParallax = Defaults.wallpaperParallax;
+            break;
+        case "wallpaperFit":
+            Settings.wallpaperFit = Defaults.wallpaperFit;
             break;
         case "barEnabled":
             Settings.barEnabled = true;

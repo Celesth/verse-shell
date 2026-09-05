@@ -14,6 +14,42 @@ import "root:/config"
 Singleton {
     id: root
 
+    // ---------- notification center ----------
+    // History of incoming notifications, most recent first, persisted as JSON
+    // (NotifHistory → notif-history.json) so the launcher pane survives daemon
+    // restarts instead of going blank. Each entry is a display snapshot the
+    // pane renders (summary, body, app, icon, glyph, timestamp, read) - no
+    // live NotificationServer objects are held. Capped at historyCapacity so
+    // both the on-disk record and the in-memory list stay small.
+    readonly property int historyCapacity: 50
+    readonly property var history: NotifHistory.items
+    property int unreadCount: 0
+    signal notificationsChanged
+    function markAllRead(): void {
+        NotifHistory.items = NotifHistory.items.map(e => Object.assign({}, e, { read: true }));
+        NotifHistory.save();
+        root.unreadCount = 0;
+        root.notificationsChanged();
+    }
+
+    // Remove one entry (the exact object the list holds) from the on-disk
+    // history - the delegate hands back its own modelData.
+    function removeFromHistory(entry): void {
+        NotifHistory.items = NotifHistory.items.filter(e => e !== entry);
+        if (NotifHistory.items.length === 0)
+            root.unreadCount = 0;
+        NotifHistory.save();
+        root.notificationsChanged();
+    }
+
+    // Drops the whole history (the pane's "clear all" button).
+    function clearHistory(): void {
+        NotifHistory.items = [];
+        NotifHistory.save();
+        root.unreadCount = 0;
+        root.notificationsChanged();
+    }
+
     // ---------- outgoing alerts ----------
 
     // Internal errors. Always the generic alert glyph (see glyphFor) so every
@@ -100,6 +136,13 @@ Singleton {
     function copyToClipboard(text: string): void {
         Quickshell.clipboardText = text;
         root.action("edit-copy", "Copied to clipboard", text, "");
+    }
+
+    // Clipboard-only copy with no feedback notification - used by the
+    // notification center's 3-dot copy, where a copy confirmation toast
+    // on top of the list you just copied from is just noise.
+    function copySilent(text: string): void {
+        Quickshell.clipboardText = text;
     }
 
     // ---------- incoming: classification ----------
@@ -265,8 +308,8 @@ Singleton {
     // for a first arrival. icon/image get the same slot-swap classification
     // viewOf does (some senders put a file path in appIcon, or route everything
     // through image as an "image://icon/NAME" pseudo-URL) but keep raw values -
-    // a bare icon name or file path - since these feed notify-send's -i/-h flags
-    // directly on replay, not a QML Image source.
+    // since these feed notify-send's -i/-h flags directly on replay, not a QML
+    // Image source.
     readonly property int replayCapacity: 5
     function remember(n): void {
         let icon = String(n.appIcon ?? "");
@@ -301,6 +344,20 @@ Singleton {
         };
         NotifCache.items = [entry].concat(NotifCache.items).slice(0, root.replayCapacity);
         NotifCache.save();
+
+        // notification center: store a display-ready snapshot of every
+        // incoming notification (excluding verse's own replay sends) so the
+        // launcher's notification pane can render the list without holding
+        // live NotificationServer objects. `unread` starts true; the pane
+        // marks it read when opened. Persisted to JSON (notif-history.json)
+        // and capped at historyCapacity.
+        if (n.appName !== "REPLAY") {
+            const v = root.viewOf(n);
+            NotifHistory.items = [{ summary: v.summary, body: v.body, app: v.app, icon: v.icon, glyph: v.glyph, timestamp: Date.now(), read: false }].concat(NotifHistory.items).slice(0, root.historyCapacity);
+            NotifHistory.save();
+            root.unreadCount++;
+            root.notificationsChanged();
+        }
     }
 
     // Replays by re-sending a real notify-send call with the original

@@ -189,6 +189,14 @@ Item {
                     if (LauncherState.pane === "walls" && Settings.wallpaperStyle !== "grid" && cell.filled)
                         springIn.restart();
                 }
+                // record the center cell's position so the wallpaper
+                // detail card can grow out of it
+                function onDetailWallChanged() {
+                    if (LauncherState.detailWall && cell.isCenter) {
+                        const p = cell.mapToItem(root.parent, cell.width / 2, cell.height / 2);
+                        LauncherState.wallDetailOrigin = Qt.point(p.x, p.y);
+                    }
+                }
             }
 
             // sign-aware, not rank*slotSpacing: a plain linear
@@ -462,7 +470,7 @@ Item {
                     enabled: cell.wall !== null && !LauncherState.promptOpen
                     onTapped: {
                         if (cell.isCenter)
-                            LauncherState.wallpaperRequested(cell.wall);
+                            LauncherState.wallpaperDetailRequested(cell.wall);
                         else
                             LauncherState.moveCarousel(Math.round(cell.rank));
                     }

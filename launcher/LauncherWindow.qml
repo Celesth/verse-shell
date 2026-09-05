@@ -252,6 +252,7 @@ PanelWindow {
         appsPage.resetEntrance();
         wallpapersPage.resetEntrance();
         clipboardPage.resetEntrance();
+        notificationPage.resetEntrance();
         settingsPane.resetEntrance();
         mediaPage.resetEntrance();
         for (let i = 0; i < customPages.count; i++) {
@@ -678,6 +679,21 @@ PanelWindow {
         }
     }
     function runWallCommand(wall) {
+        // Resolve the display-sized, fitted copy first: "center" hands the
+        // source straight back, crop/fit bake a monitor-resolution copy (see
+        // Wallpapers.prepareDisplayCopy) before anything else happens. Only
+        // the resolved file - never the raw source - reaches the wallpaper
+        // command, so the backend fills the screen at the right size under
+        // the chosen fit instead of being handed a 5K source to scale itself.
+        Wallpapers.prepareDisplayCopy(wall, Settings.wallpaperFit, resolved => {
+            if (!resolved) {
+                Notifier.error("Wallpaper prepare failed", wall.path + "\n\nImageMagick/ffmpeg is needed to fit the wallpaper to your display.");
+                return;
+            }
+            root.startWallCommand(wall, resolved);
+        });
+    }
+    function startWallCommand(wall, resolved) {
         // with the Quickshell parallax wallpaper on, the compositor's own
         // wallpaper (hyprpaper/mpvpaper) is what shows beneath it - drop it so
         // a newly chosen wallpaper doesn't linger as a second, stale copy
@@ -685,12 +701,13 @@ PanelWindow {
             Quickshell.execDetached(["bash", "-c", "pkill hyprpaper 2>/dev/null; pkill mpvpaper 2>/dev/null; true"]);
         pendingWall = wall;
         // $WALL and $BLUR are exported for the command to template with.
-        // $BLUR is the cached blurred variant the scan already resolved
-        // for this wallpaper - the same image the launcher's own backdrop
-        // draws, or the user's <stem>blurred.<ext> where they've supplied
-        // one. Empty until the background pass has generated it (a few
-        // seconds on a cold cache, see Wallpapers' scan), which is why commands
-        // that use it should guard for that.
+        // $WALL is the display-sized fitted copy prepared above (never the
+        // raw source). $BLUR is the cached blurred variant the scan already
+        // resolved for this wallpaper - the same image the launcher's own
+        // backdrop draws, or the user's <stem>blurred.<ext> where they've
+        // supplied one. Empty until the background pass has generated it (a
+        // few seconds on a cold cache, see Wallpapers' scan), which is why
+        // commands that use it should guard for that.
         // setsid -w keeps this a tracked child in every way that matters
         // (it waits, and reports the command's own exit code) while giving
         // the command its own session, so a resident setter - mpvpaper,
@@ -704,7 +721,7 @@ PanelWindow {
             WALL="$1" BLUR="$2"
             export WALL BLUR
             exec setsid -w bash -c "$3" >/dev/null 2>&1
-        `, "_", wall.path, wall.blur, Settings.wallCommand];
+        `, "_", resolved, wall.blur, Settings.wallCommand];
         wallApply.running = true;
         wallGrace.restart();
     }
@@ -725,12 +742,14 @@ PanelWindow {
     function applyWallpaper(wall) {
         if (!wall)
             return;
+        // If an earlier command is still in flight a newer pick supersedes
+        // it: drop the wrapper (its wallpaper is no longer the one wanted)
+        // and start the new command from onExited, which picks the queued
+        // wall up and re-resolves its display copy. Only the wrapper is
+        // signalled - a resident setter is off in its own session, left for
+        // the user's own command to replace as it always was. A still-running
+        // prepareDisplayCopy supersedes its in-flight draw on its own.
         if (wallApply.running) {
-            // a newer pick supersedes one still in flight: drop the wrapper
-            // (its wallpaper is no longer the one wanted) and start the new
-            // command from onExited. Only the wrapper is signalled - a
-            // resident setter is off in its own session, left for the
-            // user's own command to replace as it always was
             queuedWall = wall;
             wallApply.superseded = true;
             wallApply.running = false;
@@ -1195,6 +1214,10 @@ PanelWindow {
             id: clipboardPage
         }
 
+        NotificationPage {
+            id: notificationPage
+        }
+
         // Custom pages: one host per enabled upload. Bound to
         // Settings.uploadedPages directly (not LauncherState.orderedPages) for
         // the same delegate-stability reason the Pages settings row is -
@@ -1231,6 +1254,14 @@ PanelWindow {
             root.launch(entry);
         }
         function onWallpaperRequested(wall: var): void {
+            root.applyWallpaper(wall);
+        }
+        function onWallpaperDetailRequested(wall: var): void {
+            LauncherState.openWallpaperDetail(wall);
+        }
+        function onWallpaperApplyRequested(): void {
+            const wall = LauncherState.detailWall;
+            LauncherState.detailWall = null;
             root.applyWallpaper(wall);
         }
         function onClipExpandRequested(clip: var): void {

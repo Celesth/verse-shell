@@ -167,6 +167,8 @@ JsonAdapter {
     // window is the wallpaper the user looks at - it does not affect the
     // compositor's own (wallCommand) wallpaper.
     property bool wallpaperParallax: Defaults.wallpaperParallax
+    // scale mode for the applied wallpaper (see Defaults.wallpaperFit)
+    property string wallpaperFit: Defaults.wallpaperFit
     property string wallpaperDir: Defaults.wallpaperDir
     // command run when a wallpaper is chosen; $WALL is the image (or video -
     // verse stays backend-agnostic, so a command that wants to handle .mp4

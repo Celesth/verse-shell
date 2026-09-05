@@ -37,6 +37,7 @@ ShellRoot {
     // FileView's default property, which is why the two halves live apart.
     SettingsStore {}
     NotifCacheStore {}
+    NotifHistoryStore {}
     LaunchCountsStore {}
 
     // Each of these is a distinct wlr-layer-shell surface with its own

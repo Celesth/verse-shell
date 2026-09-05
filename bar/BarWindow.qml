@@ -248,58 +248,32 @@ PanelWindow {
                     color: Qt.alpha(Theme.muted, 0.2)
                 }
 
-                // ── clock ──
+                // ── clock (time by default, date on hover) ──
                 Item {
                     anchors.verticalCenter: parent.verticalCenter
-                    width: clockRow.implicitWidth
-                    height: clockRow.implicitHeight
+                    width: clockLabel.implicitWidth + 16
+                    height: 28
 
-                    Row {
-                        id: clockRow
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 6
+                    ScrambleText {
+                        id: clockLabel
+                        anchors.centerIn: parent
+                        content: clockHover.containsMouse ? rightGroup.dateStr : rightGroup.timeStr
+                        color: Theme.fg
+                        font.pixelSize: Theme.fontSize(12)
+                        font.family: Theme.fontFamily
+                        scrambleSection: "bar"
+                        followsPane: false
+                        replayOnChange: true
 
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "\ue425"
-                            font.family: Icons.family
-                            font.pixelSize: Theme.fontSize(10)
-                            color: Qt.alpha(Theme.muted, 0.6)
-                        }
-
-                        ScrambleText {
-                            anchors.verticalCenter: parent.verticalCenter
-                            content: rightGroup.timeStr
-                            color: Theme.fg
-                            font.pixelSize: Theme.fontSize(12)
-                            font.family: Theme.fontFamily
-                            scrambleSection: "bar"
-                            followsPane: false
-                            replayOnChange: true
-                        }
-
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "\u00b7"
-                            color: Qt.alpha(Theme.muted, 0.4)
-                            font.pixelSize: Theme.fontSize(12)
-                            font.family: Theme.fontFamily
-                        }
-
-                        ScrambleText {
-                            anchors.verticalCenter: parent.verticalCenter
-                            content: rightGroup.dateStr
-                            color: Qt.alpha(Theme.muted, 0.7)
-                            font.pixelSize: Theme.fontSize(11)
-                            font.family: Theme.fontFamily
-                            scrambleSection: "bar"
-                            followsPane: false
-                            replayOnChange: true
+                        Behavior on opacity {
+                            NumberAnimation { duration: 120 }
                         }
                     }
 
                     MouseArea {
+                        id: clockHover
                         anchors.fill: parent
+                        hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
                             const now = new Date();
@@ -314,6 +288,63 @@ PanelWindow {
                     anchors.verticalCenter: parent.verticalCenter
                     width: 1; height: 14
                     color: Qt.alpha(Theme.muted, 0.2)
+                }
+
+                // ── notifications bell ──
+                Rectangle {
+                    id: notifBtn
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 24; height: 24
+                    radius: height / 2
+                    color: notifArea.containsMouse
+                        ? Qt.alpha(Theme.accent, 0.18)
+                        : Qt.alpha(Theme.fg, 0.08)
+
+                    Behavior on color { ColorAnimation { duration: 120 } }
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: Icons.bell
+                        font.family: Icons.family
+                        font.pixelSize: Theme.fontSize(13)
+                        color: Theme.accent
+                        opacity: notifArea.containsMouse ? 1 : 0.7
+                    }
+
+                    // unread count badge
+                    Rectangle {
+                        visible: Notifier.unreadCount > 0
+                        anchors.top: parent.top
+                        anchors.topMargin: -2
+                        anchors.right: parent.right
+                        anchors.rightMargin: -2
+                        width: Math.max(14, badgeText.implicitWidth + 6)
+                        height: 14
+                        radius: 7
+                        color: Theme.accent
+
+                        Text {
+                            id: badgeText
+                            anchors.centerIn: parent
+                            text: Notifier.unreadCount > 99 ? "99+" : "" + Notifier.unreadCount
+                            color: "#fff"
+                            font.pixelSize: Theme.fontSize(9)
+                            font.family: Theme.fontFamily
+                            font.weight: Font.DemiBold
+                        }
+                    }
+
+                    MouseArea {
+                        id: notifArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (LauncherState.barAppsOpen) LauncherState.barAppsOpen = false;
+                            Notifier.markAllRead();
+                            Quickshell.execDetached(["bash", "-c", "exec ~/Projects/dots-hyprland/verse/verse toggle notifs"]);
+                        }
+                    }
                 }
 
                 Rectangle {

@@ -165,7 +165,7 @@ Singleton {
     // upload/trash/disk sync, so this binding is stable the rest of
     // the time.
     readonly property var pageIds: {
-        const def = ["clock", "apps", "walls", "clips", "media"];
+        const def = ["clock", "apps", "walls", "clips", "notifs", "media"];
         // custom pages before the built-in four: this is what the
         // "missing id" top-up in orderedPages below falls back to
         // whenever it has to place one without a captured position
@@ -332,6 +332,7 @@ Singleton {
         root.query = "";
         cancelCapture();
         expandedClip = null;
+        closeWallpaperDetail();
         // leaving a page resets its selection back to the first item, so
         // returning to it later doesn't resume wherever it was left -
         // set directly rather than relying on root.query = "" above to
@@ -570,6 +571,8 @@ Singleton {
             root.disarmReboot();
         else if (root.expandedClip)
             root.collapseClip();
+        else if (root.detailWall)
+            root.closeWallpaperDetail();
         else if (root.pane === "settings" && root.activePanes.length)
             root.setPane(root.paneBehindSettings());
         else
@@ -819,6 +822,33 @@ Singleton {
             root.expandAnimCollapse();
     }
 
+    // ---------- wallpaper detail ----------
+    // Single click on a wallpaper tile/carousel cell opens this detail card
+    // rather than applying directly (Enter no longer applies either). It
+    // previews the wallpaper under the chosen fit, shows its metadata, lets
+    // the fit be changed per-wallpaper, and only applies when Apply is
+    // pressed - at which point it asks the window to bake the display-sized
+    // fitted copy and run the wallpaper command. Closing (Escape, backdrop
+    // click, goBack) just collapses the card and leaves the selector as it
+    // was.
+    property var detailWall: null
+    property point wallDetailOrigin: Qt.point(0, 0)
+    signal wallDetailStart
+    signal wallDetailClose
+    signal wallpaperDetailRequested(var wall)
+    signal wallpaperApplyRequested
+    function openWallpaperDetail(wall): void {
+        if (!wall)
+            return;
+        detailWall = wall;
+        // cells record wallDetailOrigin synchronously on the change above
+        Qt.callLater(() => root.wallDetailStart());
+    }
+    function closeWallpaperDetail(): void {
+        if (root.detailWall)
+            root.wallDetailClose();
+    }
+
     readonly property var expandedInfo: {
         const c = expandedClip;
         if (!c)
@@ -971,7 +1001,7 @@ Singleton {
     // LauncherWindow to carry out.
     function activate(): void {
         if (root.pane === "walls")
-            root.wallpaperRequested(root.wallpaperMatches[root.wallpaperSelected] ?? null);
+            root.openWallpaperDetail(root.wallpaperMatches[root.wallpaperSelected] ?? null);
         else if (root.pane === "clips") {
             if (root.expandedClip)
                 root.clipCollapseRequested();

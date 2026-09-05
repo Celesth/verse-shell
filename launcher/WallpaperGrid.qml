@@ -141,6 +141,12 @@ Item {
                         if (LauncherState.pane === "walls" && cell.filled)
                             springIn.restart();
                     }
+                    function onDetailWallChanged() {
+                        if (LauncherState.detailWall && cell.isSelected) {
+                            const p = cell.mapToItem(root.parent, cell.width / 2, cell.height / 2);
+                            LauncherState.wallDetailOrigin = Qt.point(p.x, p.y);
+                        }
+                    }
                 }
 
                 Item {
@@ -212,7 +218,7 @@ Item {
                             enabled: cell.filled
                             onTapped: {
                                 if (Settings.singleClickActivate || cell.isSelected)
-                                    LauncherState.wallpaperRequested(cell.wall);
+                                    LauncherState.wallpaperDetailRequested(cell.wall);
                                 else
                                     LauncherState.wallpaperSelected = cell.wallIndex;
                             }

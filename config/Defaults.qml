@@ -12,9 +12,13 @@ QtObject {
     readonly property string wallpaperDir: "~/Pictures/Wallpapers"
     readonly property bool wallpaperParallax: false
     readonly property bool glassEffect: false
+    // how an applied wallpaper is scaled onto the display: "crop" fills the
+    // screen and crops overflow, "fit" shows the whole image letterboxed,
+    // "center" draws it at native size in the middle
+    readonly property string wallpaperFit: "crop"
 
-    readonly property var pages: ({ clock: true, apps: true, walls: true, clips: true, media: true })
-    readonly property var pageOrder: ["clock", "apps", "walls", "clips", "media"]
+    readonly property var pages: ({ clock: true, apps: true, walls: true, clips: true, notifs: true, media: true })
+    readonly property var pageOrder: ["clock", "apps", "walls", "clips", "notifs", "media"]
     readonly property var clockShow: ({ date: true, battery: true, weather: true })
     // per-page tile grid decorations: the live search query above the tiles,
     // and a page-of-tiles dot indicator below them. Both off out of the box -

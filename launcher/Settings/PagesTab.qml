@@ -175,6 +175,8 @@ Column {
 
     SettingRow { key: "wallpaperLive"; label: "Wallpapers live preview" }
 
+    SettingRow { key: "wallpaperFit"; label: "Wallpaper fit"; hint: "how an applied wallpaper scales to the screen" }
+
     // wallpaper path
     Item {
         width: LauncherState.settingsContentWidth

@@ -554,4 +554,110 @@ Singleton {
         running: root.xrayScaleWanted
         onTriggered: root.setXrayOutputScale(1, root.screen ? root.screen.name : "")
     }
+
+    // ---------- display-sized fitted copy ----------
+    // An applied wallpaper is baked to a monitor-resolution copy under the
+    // chosen fit mode before it reaches the wallpaper command, rather than
+    // being handed over at native size: a 5K source on a 1080p display costs
+    // the backend unnecessary VRAM and a low-res source upscaled by the
+    // compositor reads blurry. The copy is cached beside the other variants,
+    // keyed by source + fit + display geometry, so re-applying or changing
+    // the fit is free. "center" and "original" have nothing to scale - the
+    // former places the image at native size, the latter keeps it at its
+    // original scale untouched - so both use the source directly and skip
+    // the cache.
+    readonly property size displaySize: {
+        const s = root.screen;
+        if (!s)
+            return Qt.size(0, 0);
+        return Qt.size(Math.max(1, Math.round(s.width)), Math.max(1, Math.round(s.height)));
+    }
+    readonly property string displayDir: SystemInfo.cacheRoot + "/wallpapers/display"
+
+    // Queues the one generation process. Holds the in-flight request so its
+    // onExited (or the cached fast path) can resolve the caller. The bash
+    // computes its own cache key from source+fit+display geometry (md5sum,
+    // same scheme as the scan) and only regenerates when the existing copy is
+    // stale or missing, so re-applying or editing the fit is a near-instant
+    // no-op. stdout carries the final path, which onReady receives ("" on a
+    // genuine failure).
+    property var drawReq: ({ wall: null, fit: "", onReady: null })
+    property string drawOut: ""
+    Process {
+        id: draw
+        stdout: StdioCollector {
+            onStreamFinished: root.drawOut = text.trim()
+        }
+        onExited: code => {
+            const req = root.drawReq;
+            root.drawReq = { wall: null, fit: "", onReady: null };
+            if (req.onReady)
+                req.onReady(code === 0 ? root.drawOut : "");
+        }
+    }
+    // Bake a display-sized, fitted copy of `wall` into displayDir and call
+    // onReady(path) with the result ("" on failure). "center" and "original"
+    // have nothing to scale, so they hand the source back untouched and skip
+    // the cache. A newer call supersedes one still in flight.
+    function prepareDisplayCopy(wall, fit, onReady): void {
+        if (!wall) { onReady(""); return; }
+        if (fit === "center" || fit === "original") { onReady(wall.path); return; }
+        if (draw.running)
+            draw.running = false;
+        root.drawReq = { wall, fit, onReady };
+        const s = root.displaySize;
+        const w = s.width, h = s.height;
+        if (wall.video) {
+            draw.command = ["bash", "-c", `
+                set -e
+                key=$(printf '%s' "$1|$4|$5|d1" | md5sum | cut -d' ' -f1)
+                mkdir -p "$2"
+                out="$2/$key.mp4"
+                if [ ! "$out" -nt "$1" ]; then
+                    ffmpeg -y -v error -i "$1" -vf "scale=$4:$5:flags=lanczos,setsar=1" -c:v libx264 -crf 20 -pix_fmt yuv420p "$out"
+                fi
+                printf '%s' "$out"
+            `, "_", wall.path, root.displayDir, wall.path, w, h];
+        } else {
+            // "crop": fill the display and cut the overflow. "fit": contain
+            // the whole image, padded to the display aspect on black (the > is
+            // magick's "only shrink" so a source already smaller than the
+            // display comes through without being upscaled).
+            const resize = fit === "fit" ? w + "x" + h + ">" : w + "x" + h + "^";
+            draw.command = ["bash", "-c", `
+                set -e
+                key=$(printf '%s' "$1|$6|d1" | md5sum | cut -d' ' -f1)
+                mkdir -p "$2"
+                out="$2/$key.jpg"
+                if [ ! "$out" -nt "$1" ]; then
+                    magick "$1[0]" -resize "$6" -background black -gravity center -extent $4x$5 -quality 95 "$out"
+                fi
+                printf '%s' "$out"
+            `, "_", wall.path, root.displayDir, wall.path, w, h, resize];
+        }
+        draw.running = true;
+    }
+
+    // Native pixel dimensions of a wallpaper, resolved as "WxH" through
+    // onReady once a quick identify lands ("" until then, on failure, or for
+    // a video). Used by the detail view's metadata; never blocks the apply.
+    Process {
+        id: dimProbe
+        property var onReady: null
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const cb = dimProbe.onReady;
+                dimProbe.onReady = null;
+                if (cb) cb(text.trim());
+            }
+        }
+    }
+    function probeDimensions(wall, onReady): void {
+        if (!wall || wall.video) { onReady(""); return; }
+        if (dimProbe.running)
+            dimProbe.onReady = null;
+        dimProbe.onReady = onReady;
+        dimProbe.command = ["bash", "-c", 'identify -format "%wx%h" "$1" 2>/dev/null', "_", wall.path];
+        dimProbe.running = true;
+    }
 }

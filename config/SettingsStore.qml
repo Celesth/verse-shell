@@ -19,7 +19,10 @@ Scope {
     FileView {
         id: store
 
-        path: "$HOME/.config/verse/settings.json"
+        // system config dir (~/.config/verse/settings.json) so it agrees with
+        // the `verse` CLI and a user's hand edits; FileView does not expand
+        // "$HOME", so build the absolute path via the env explicitly
+        path: Quickshell.env("HOME") + "/.config/verse/settings.json"
         blockLoading: true
         printErrors: false
         // pick up hand edits to settings.json live; without this the daemon
