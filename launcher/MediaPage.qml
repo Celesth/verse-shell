@@ -62,10 +62,17 @@ Item {
             return null;
         }
 
+        // Auto-picks a leading player when the media pane is entered. Only
+        // ticks while the pane is actually visible, and stops for good the
+        // moment a player is settled on - so instead of firing once a second
+        // for the daemon's whole life (a permanent 1Hz wakeup even when the
+        // media pane is never opened), it wakes the event loop only for the
+        // handful of seconds it takes to settle.
         Timer {
             id: leadTimer
             interval: 1000
             repeat: true
+            running: root.panel.visible && root.panel.picked === null
             onTriggered: {
                 const p = root.panel;
                 if (p.picked !== null || !p.hasPlayers)
@@ -74,6 +81,8 @@ Item {
                     p.picked = p.playingPlayer();
                 else if (Mpris.players.count > 0 && p.picked === null)
                     p.picked = Mpris.players.values[0];
+                if (p.picked !== null)
+                    root.leadTimer.stop();
             }
         }
 

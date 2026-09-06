@@ -22,8 +22,17 @@ Item {
         anchors.centerIn: parent
         readonly property int queryH: Settings.pageIndicatorEnabled("query") ? 32 : 0
         readonly property int dotsH: Settings.pageIndicatorEnabled("dots") ? 20 : 0
+        // The card only grows up to what fits the pane; when there are many
+        // notifications the ListView scrolls internally instead. This keeps
+        // the whole card centered and on-screen no matter how full it gets -
+        // without the clamp it would grow taller than the screen and its top
+        // and bottom edges would push off-screen (the panel "vanishing").
+        readonly property int sideMargin: 20
         width: 480
-        height: Math.max(listView.contentHeight + 48, 120) + drawer.queryH + drawer.dotsH
+        height: Math.min(
+            Math.max(listView.contentHeight + 48, 120) + drawer.queryH + drawer.dotsH,
+            root.height - 2 * drawer.sideMargin
+        )
         Behavior on height {
             NumberAnimation { duration: Anim.tile(240); easing.type: Easing.OutCubic }
         }
@@ -101,11 +110,12 @@ Item {
         // ── notification list ──
         ListView {
             id: listView
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.top: parent.top
+            anchors.left: drawer.left
+            anchors.right: drawer.right
+            anchors.top: drawer.top
             anchors.topMargin: 26 + drawer.queryH
-            width: 432
-            height: Math.min(contentHeight, root.height - 80 - drawer.queryH - drawer.dotsH)
+            anchors.bottom: drawer.bottom
+            anchors.bottomMargin: 20 + drawer.dotsH
             clip: true
             spacing: 8
             model: Notifier.history

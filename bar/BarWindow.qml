@@ -383,24 +383,11 @@ PanelWindow {
     }
 
     // ── poll active window ──
-    Process {
-        id: windowPoll
-        command: ["hyprctl", "activewindow", "-j"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                try {
-                    const d = JSON.parse(text);
-                    activeTitle.content = d.title || "";
-                } catch (e) {}
-            }
-        }
-    }
-
-    Timer {
-        interval: 500
-        repeat: true
-        running: true
-        onTriggered: { if (!windowPoll.running) windowPoll.running = true; }
-        Component.onCompleted: windowPoll.running = true
-    }
+    // The active window title is updated reactively via
+    // Quickshell.Wayland.ToplevelManager (the `activeWindow` binding on the
+    // center label), which the compositor pushes to whenever focus changes.
+    // No `hyprctl activewindow` polling needed - spawning a hyprctl subprocess
+    // and parsing its JSON every 500ms for the daemon's whole life burned CPU
+    // and, worse, the Process's `activeTitle.content = ...` assignment severed
+    // that reactive binding, forcing the label to rely on the poll.
 }
