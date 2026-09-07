@@ -21,6 +21,17 @@ PanelWindow {
 
     color: "transparent"
 
+    // Liquid glass: blur exactly the panel behind it when the transparency
+    // effect is on (ext-background-effect-v1, rounded region follows the
+    // panelWrapper so the transparent surround stays sharp).
+    BackgroundEffect.blurRegion: Settings.glassEffect ? panelGlassRegion : null
+
+    Region {
+        id: panelGlassRegion
+        item: panelWrapper
+        radius: 14
+    }
+
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "verse-apps"
     WlrLayershell.exclusiveZone: 0

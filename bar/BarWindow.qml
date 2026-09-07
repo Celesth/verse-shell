@@ -23,6 +23,18 @@ PanelWindow {
 
     color: "transparent"
 
+    // Liquid glass: when the transparency effect is on the compositor blurs
+    // exactly the pill behind it (ext-background-effect-v1, region follows the
+    // pill's geometry and corners so there's no blurbleed into the transparent
+    // strip around it). Off means an opaque bar - no blur worth paying for.
+    BackgroundEffect.blurRegion: Settings.glassEffect ? barGlassRegion : null
+
+    Region {
+        id: barGlassRegion
+        item: barWrapper
+        radius: Math.min(barWrapper.height / 2, 14)
+    }
+
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.namespace: "verse-bar"
     WlrLayershell.exclusiveZone: Settings.barExclusive ? 38 + Settings.barPadding : 0
