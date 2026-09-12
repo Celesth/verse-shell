@@ -8,6 +8,11 @@ import "root:/launcher"
 import "root:/services"
 import "root:/ui"
 
+// The bar is a Dynamic Island: a centered pill that floats at the top and
+// morphs its width as its center content swaps between the focused window
+// (icon + title) and, when nothing is focused, the clock. The window surface
+// itself stays a full-width top layer so exclusive-zone, barrier and
+// multi-monitor behaviour are untouched - only the drawn pill adapts.
 PanelWindow {
     id: root
 
@@ -16,7 +21,7 @@ PanelWindow {
         left: true
         right: true
     }
-    height: 44
+    implicitHeight: 44
     visible: Settings.barEnabled
 
     property bool appsOpen: LauncherState.barAppsOpen
@@ -24,15 +29,15 @@ PanelWindow {
     color: "transparent"
 
     // Liquid glass: when the transparency effect is on the compositor blurs
-    // exactly the pill behind it (ext-background-effect-v1, region follows the
-    // pill's geometry and corners so there's no blurbleed into the transparent
-    // strip around it). Off means an opaque bar - no blur worth paying for.
+    // exactly the pill behind it (ext-background-effect-v1). The region follows
+    // the pill's geometry - including the animated width - so the blur keeps in
+    // step with every morph and never bleeds into the transparent surround.
     BackgroundEffect.blurRegion: Settings.glassEffect ? barGlassRegion : null
 
     Region {
         id: barGlassRegion
         item: barWrapper
-        radius: Math.min(barWrapper.height / 2, 14)
+        radius: barWrapper.height / 2
     }
 
     WlrLayershell.layer: WlrLayer.Top
@@ -41,16 +46,24 @@ PanelWindow {
     exclusionMode: Settings.barExclusive ? ExclusionMode.Normal : ExclusionMode.Ignore
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
+    // ── the pill: centered, its width animate-follows the content ──
     Item {
         id: barWrapper
         anchors.horizontalCenter: parent.horizontalCenter
         y: 8
-        width: parent.width - 40
         height: 36
 
+        property real targetWidth: Math.min(parent.width - 40, innerRow.implicitWidth + 24)
+        width: targetWidth
+
+        Behavior on width {
+            NumberAnimation { duration: 260; easing.type: Easing.OutCubic }
+        }
+
         Rectangle {
+            id: bg
             anchors.fill: parent
-            radius: Math.min(height / 2, 14)
+            radius: parent.height / 2
             color: Settings.glassEffect ? Qt.alpha(Theme.surface, 0.55) : Theme.surface
             border.width: Settings.glassEffect ? 1 : 0
             border.color: Settings.glassEffect ? Qt.alpha(Theme.fg, 0.12) : "transparent"
@@ -67,17 +80,16 @@ PanelWindow {
             }
         }
 
-        Item {
-            id: content
-            anchors.fill: parent
-            anchors.leftMargin: 14
-            anchors.rightMargin: 14
+        Row {
+            id: innerRow
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 8
 
-            // ── left group ──
+            // ── left: launcher, workspaces, now playing ──
             Row {
                 id: leftGroup
                 anchors.verticalCenter: parent.verticalCenter
-                anchors.left: parent.left
                 spacing: 8
 
                 // ── launcher button ──
@@ -129,56 +141,20 @@ PanelWindow {
                 }
             }
 
-            // ── center: active window title ──
-            ScrambleText {
-                id: activeTitle
+            // ── center: the morphing island ──
+            DynamicIsland {
                 anchors.verticalCenter: parent.verticalCenter
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: Math.min(parent.width * 0.35, implicitWidth + 20)
-                content: activeWindow.title || ""
-                color: Theme.muted
-                font.pixelSize: Theme.fontSize(12)
-                font.family: Theme.fontFamily
-                elide: Text.ElideRight
-                maximumLineCount: 1
-                horizontalAlignment: Text.AlignHCenter
-                scrambleSection: "bar"
-                followsPane: false
-                replayOnChange: true
-                opacity: activeWindow.title ? 0.7 : 0
-
-                Behavior on opacity {
-                    NumberAnimation { duration: 150 }
-                }
             }
 
-            // ── right group ──
+            // ── right: tray, notifications, settings ──
             Row {
                 id: rightGroup
                 anchors.verticalCenter: parent.verticalCenter
-                anchors.right: parent.right
                 spacing: 8
 
                 QsMenuAnchor {
                     id: trayMenuAnchor
                     anchor.window: root.Window.window
-                }
-
-                property string timeStr: ""
-                property string dateStr: ""
-
-                Timer {
-                    interval: 1000
-                    repeat: true
-                    running: true
-                    onTriggered: rightGroup.updateTime()
-                    Component.onCompleted: rightGroup.updateTime()
-                }
-
-                function updateTime() {
-                    const now = new Date();
-                    timeStr = now.toLocaleTimeString(Qt.locale(), "h:mm AP");
-                    dateStr = now.toLocaleDateString(Qt.locale(), "ddd, MMM d, yyyy");
                 }
 
                 // ── tray icons ──
@@ -260,48 +236,6 @@ PanelWindow {
                     color: Qt.alpha(Theme.muted, 0.2)
                 }
 
-                // ── clock (time by default, date on hover) ──
-                Item {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: clockLabel.implicitWidth + 16
-                    height: 28
-
-                    ScrambleText {
-                        id: clockLabel
-                        anchors.centerIn: parent
-                        content: clockHover.containsMouse ? rightGroup.dateStr : rightGroup.timeStr
-                        color: Theme.fg
-                        font.pixelSize: Theme.fontSize(12)
-                        font.family: Theme.fontFamily
-                        scrambleSection: "bar"
-                        followsPane: false
-                        replayOnChange: true
-
-                        Behavior on opacity {
-                            NumberAnimation { duration: 120 }
-                        }
-                    }
-
-                    MouseArea {
-                        id: clockHover
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            const now = new Date();
-                            const full = now.toLocaleDateString(Qt.locale(), "dddd, MMMM d, yyyy");
-                            Quickshell.execDetached(["notify-send", "-a", "verse", "-t", "5000", "Calendar", full]);
-                        }
-                    }
-                }
-
-                Rectangle {
-                    id: sep3
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 1; height: 14
-                    color: Qt.alpha(Theme.muted, 0.2)
-                }
-
                 // ── notifications bell ──
                 Rectangle {
                     id: notifBtn
@@ -360,6 +294,14 @@ PanelWindow {
                 }
 
                 Rectangle {
+                    id: sep2
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 1; height: 14
+                    color: Qt.alpha(Theme.muted, 0.2)
+                }
+
+                // ── settings button ──
+                Rectangle {
                     id: settingsBtn
                     anchors.verticalCenter: parent.verticalCenter
                     width: 24; height: 24
@@ -393,13 +335,4 @@ PanelWindow {
             }
         }
     }
-
-    // ── poll active window ──
-    // The active window title is updated reactively via
-    // Quickshell.Wayland.ToplevelManager (the `activeWindow` binding on the
-    // center label), which the compositor pushes to whenever focus changes.
-    // No `hyprctl activewindow` polling needed - spawning a hyprctl subprocess
-    // and parsing its JSON every 500ms for the daemon's whole life burned CPU
-    // and, worse, the Process's `activeTitle.content = ...` assignment severed
-    // that reactive binding, forcing the label to rely on the poll.
 }
