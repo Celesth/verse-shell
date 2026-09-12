@@ -70,6 +70,12 @@ QtObject {
     readonly property int batteryAlertLevel: 5
 
     readonly property int barPadding: 0
+    // the island's side buttons hide until hovered while this is on, and the
+    // island drifts back to its overview after autoReturnDelay ms of quiet when
+    // autoReturn is on; both off out of the box
+    readonly property bool autoHideButtons: false
+    readonly property bool autoReturn: false
+    readonly property int autoReturnDelay: 4000
     readonly property int hyprBorder: 2
     readonly property int hyprRounding: 8
 }

@@ -175,6 +175,12 @@ Singleton {
             return Settings.barExclusive ? "on" : "off";
         case "barPadding":
             return Settings.barPadding + " px";
+        case "autoHideButtons":
+            return Settings.autoHideButtons ? "on" : "off";
+        case "autoReturn":
+            return Settings.autoReturn ? "on" : "off";
+        case "autoReturnDelay":
+            return (Settings.autoReturnDelay / 1000).toFixed(0) + " s";
         case "hyprBorder":
             return Settings.hyprBorder + " px";
         case "hyprRounding":
@@ -284,6 +290,15 @@ Singleton {
             break;
         case "barPadding":
             Settings.barPadding = Math.max(0, Math.min(40, Settings.barPadding + dir * 2));
+            break;
+        case "autoHideButtons":
+            Settings.autoHideButtons = !Settings.autoHideButtons;
+            break;
+        case "autoReturn":
+            Settings.autoReturn = !Settings.autoReturn;
+            break;
+        case "autoReturnDelay":
+            Settings.autoReturnDelay = Math.max(1000, Math.min(15000, Settings.autoReturnDelay + dir * 1000));
             break;
         case "hyprBorder":
             Settings.hyprBorder = Math.max(0, Math.min(10, Settings.hyprBorder + dir));
@@ -481,6 +496,15 @@ Singleton {
             break;
         case "barPadding":
             Settings.barPadding = 0;
+            break;
+        case "autoHideButtons":
+            Settings.autoHideButtons = false;
+            break;
+        case "autoReturn":
+            Settings.autoReturn = false;
+            break;
+        case "autoReturnDelay":
+            Settings.autoReturnDelay = 4000;
             break;
         case "hyprBorder":
             Settings.hyprBorder = 2;

@@ -16,6 +16,10 @@ Item {
 
     property int activeId: 1
     property var occupied: []
+    // Whether this indicator is usable right now. Gates the hyprctl poll below
+    // so an island that hides the workspace mode doesn't run it at all: the
+    // 350ms monitors call is only ever spent while the user is looking at it.
+    property bool active: false
 
     readonly property int count: 10
     readonly property real pillH: 22
@@ -45,9 +49,14 @@ Item {
     Timer {
         interval: 350
         repeat: true
-        running: true
+        running: root.active
         onTriggered: { if (!hyprctl.running) hyprctl.running = true; }
-        Component.onCompleted: hyprctl.running = true
+    }
+    // one immediate refresh when the workspace mode comes into view, so the
+    // indicator doesn't wait up to one poll interval to show current data
+    onActiveChanged: {
+        if (root.active && !hyprctl.running)
+            hyprctl.running = true;
     }
 
     readonly property var jpNumerals: ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]

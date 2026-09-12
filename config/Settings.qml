@@ -132,6 +132,9 @@ JsonAdapter {
     property bool barEnabled: true
     property bool barExclusive: true
     property int barPadding: 0
+    property bool autoHideButtons: Defaults.autoHideButtons
+    property bool autoReturn: Defaults.autoReturn
+    property int autoReturnDelay: Defaults.autoReturnDelay
     property int hyprBorder: 2
     property int hyprRounding: 8
 

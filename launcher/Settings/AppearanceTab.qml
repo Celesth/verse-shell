@@ -22,6 +22,9 @@ Column {
     SettingRow { key: "barEnabled"; label: "Show bar" }
     SettingRow { key: "barExclusive"; label: "Bar reserves space" }
     SettingRow { key: "barPadding"; label: "Bar padding"; hint: "extra gap between bar and windows" }
+    SettingRow { key: "autoHideButtons"; label: "Auto-hide bar buttons"; hint: "launcher, bell & settings appear on hover" }
+    SettingRow { key: "autoReturn"; label: "Auto-return to overview"; hint: "island drifts back after a quiet moment" }
+    SettingRow { key: "autoReturnDelay"; label: "Auto-return delay"; hint: "how long a mode stays before returning" }
     SettingRow { key: "hyprBorder"; label: "Window border"; hint: "0 = no borders" }
     SettingRow { key: "hyprRounding"; label: "Window corners"; hint: "0 = no rounding" }
     SettingRow { key: "textScramble"; label: "Text scramble"; hint: "character scramble effect on text" }

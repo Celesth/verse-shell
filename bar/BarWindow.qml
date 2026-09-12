@@ -2,17 +2,21 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Io
-import Quickshell.Services.SystemTray
 import "root:/config"
 import "root:/launcher"
 import "root:/services"
 import "root:/ui"
 
 // The bar is a Dynamic Island: a centered pill that floats at the top and
-// morphs its width as its center content swaps between the focused window
-// (icon + title) and, when nothing is focused, the clock. The window surface
-// itself stays a full-width top layer so exclusive-zone, barrier and
-// multi-monitor behaviour are untouched - only the drawn pill adapts.
+// morphs its width as its center content swaps between modes (see
+// DynamicIsland.qml - the window/clock overview, workspaces, system tray, and
+// MPRIS, cycled with the mouse wheel). The window surface stays a full-width
+// top layer so exclusive-zone, barrier and multi-monitor behaviour are
+// untouched - only the drawn pill adapts.
+//
+// The few always-useful commands live at the pill's sides: the launcher on the
+// left, notifications + settings on the right. "Auto-hide bar buttons" folds
+// them away unless the pointer is over the island or one of the buttons.
 PanelWindow {
     id: root
 
@@ -53,6 +57,11 @@ PanelWindow {
         y: 8
         height: 36
 
+        // Auto-hidden utilities are width 0 while away but still laid out with
+        // the row's spacing, which shows up as extra even padding - symmetric
+        // on both sides, so the island stays centered either way.
+        readonly property bool utilVisible: !Settings.autoHideButtons || root.utilHovered
+
         property real targetWidth: Math.min(parent.width - 40, innerRow.implicitWidth + 24)
         width: targetWidth
 
@@ -86,16 +95,22 @@ PanelWindow {
             anchors.verticalCenter: parent.verticalCenter
             spacing: 8
 
-            // ── left: launcher, workspaces, now playing ──
-            Row {
-                id: leftGroup
+            // ── left: launcher ──
+            Item {
+                id: utilWrapper
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: 8
+                width: root.utilVisible ? 24 : 0
+                height: 24
+                opacity: root.utilVisible ? 1 : 0
+                scale: root.utilVisible ? 1 : 0.9
 
-                // ── launcher button ──
+                Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+                Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+
                 Rectangle {
                     id: launcherBtn
-                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.centerIn: parent
                     width: 24; height: 24
                     radius: height / 2
                     color: launcherArea.containsMouse
@@ -121,125 +136,46 @@ PanelWindow {
                         onClicked: LauncherState.barAppsOpen = !LauncherState.barAppsOpen
                     }
                 }
-
-                Rectangle {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 1; height: 14
-                    color: Qt.alpha(Theme.muted, 0.2)
-                }
-
-                // ── workspaces ──
-                Workspaces {
-                    id: workspaces
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-
-                // ── now playing (MPRIS) ──
-                MediaPlayer {
-                    id: mediaPlayer
-                    anchors.verticalCenter: parent.verticalCenter
-                }
             }
 
-            // ── center: the morphing island ──
+            // ── center: the morphing, scroll-cycling island ──
             DynamicIsland {
+                id: island
                 anchors.verticalCenter: parent.verticalCenter
             }
 
-            // ── right: tray, notifications, settings ──
-            Row {
-                id: rightGroup
+            // ── right: bell + settings ──
+            Item {
+                id: sepWrapper
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: 8
+                width: root.utilVisible ? 1 : 0
+                height: 14
+                opacity: root.utilVisible ? 1 : 0
 
-                QsMenuAnchor {
-                    id: trayMenuAnchor
-                    anchor.window: root.Window.window
-                }
-
-                // ── tray icons ──
-                Repeater {
-                    model: SystemTray.items
-
-                    Item {
-                        required property SystemTrayItem modelData
-
-                        width: 22; height: 22
-
-                        property bool hovered: false
-
-                        Rectangle {
-                            anchors.fill: parent
-                            radius: 4
-                            color: parent.hovered
-                                ? Qt.alpha(Theme.accent, 0.18)
-                                : (modelData.status === Status.NeedsAttention
-                                    ? Qt.alpha(Theme.accent, 0.12)
-                                    : "transparent")
-
-                            Behavior on color { ColorAnimation { duration: 100 } }
-                        }
-
-                        Image {
-                            anchors.centerIn: parent
-                            width: 16; height: 16
-                            source: modelData.icon
-                            smooth: false
-                            mipmap: false
-                            asynchronous: true
-                            fillMode: Image.PreserveAspectFit
-                        }
-
-                        TrayPopup {
-                            anchorItem: parent
-                            tipTitle: modelData.title || modelData.tooltipTitle || modelData.id
-                            tipHasMenu: modelData.hasMenu
-                            hovered: parent.hovered
-                        }
-
-                        MouseArea {
-                            id: trayIconArea
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
-                            cursorShape: Qt.PointingHandCursor
-
-                            onEntered: parent.hovered = true
-                            onExited: parent.hovered = false
-
-                            onClicked: function(mouse) {
-                                if (mouse.button === Qt.LeftButton && !modelData.onlyMenu) {
-                                    modelData.activate();
-                                } else if (mouse.button === Qt.MiddleButton) {
-                                    modelData.secondaryActivate();
-                                } else if (mouse.button === Qt.RightButton) {
-                                    if (modelData.hasMenu) {
-                                        trayMenuAnchor.menu = modelData.menu;
-                                        trayMenuAnchor.open();
-                                    }
-                                }
-                            }
-
-                            onWheel: function(wheel) {
-                                const horizontal = Math.abs(wheel.angleDelta.x) > Math.abs(wheel.angleDelta.y);
-                                const delta = horizontal ? wheel.angleDelta.x : wheel.angleDelta.y;
-                                if (delta !== 0) modelData.scroll(delta, horizontal);
-                            }
-                        }
-                    }
-                }
+                Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
 
                 Rectangle {
-                    visible: SystemTray.items.count > 0
-                    anchors.verticalCenter: parent.verticalCenter
                     width: 1; height: 14
                     color: Qt.alpha(Theme.muted, 0.2)
                 }
+            }
 
-                // ── notifications bell ──
+            Item {
+                id: notifWrapper
+                anchors.verticalCenter: parent.verticalCenter
+                width: root.utilVisible ? 24 : 0
+                height: 24
+                opacity: root.utilVisible ? 1 : 0
+                scale: root.utilVisible ? 1 : 0.9
+
+                Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+                Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+
                 Rectangle {
                     id: notifBtn
-                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.centerIn: parent
                     width: 24; height: 24
                     radius: height / 2
                     color: notifArea.containsMouse
@@ -292,18 +228,39 @@ PanelWindow {
                         }
                     }
                 }
+            }
+
+            Item {
+                id: sep2Wrapper
+                anchors.verticalCenter: parent.verticalCenter
+                width: root.utilVisible ? 1 : 0
+                height: 14
+                opacity: root.utilVisible ? 1 : 0
+
+                Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
 
                 Rectangle {
-                    id: sep2
-                    anchors.verticalCenter: parent.verticalCenter
                     width: 1; height: 14
                     color: Qt.alpha(Theme.muted, 0.2)
                 }
+            }
 
-                // ── settings button ──
+            Item {
+                id: settingsWrapper
+                anchors.verticalCenter: parent.verticalCenter
+                width: root.utilVisible ? 24 : 0
+                height: 24
+                opacity: root.utilVisible ? 1 : 0
+                scale: root.utilVisible ? 1 : 0.9
+
+                Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+                Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+
                 Rectangle {
                     id: settingsBtn
-                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.centerIn: parent
                     width: 24; height: 24
                     radius: height / 2
                     color: settingsArea.containsMouse
@@ -335,4 +292,12 @@ PanelWindow {
             }
         }
     }
+
+    // Revealed while the pointer sits over the island or any of the side
+    // buttons. The island owns the only big hover target (its scroller covers
+    // the whole center), so that is where the gesture starts from.
+    readonly property bool utilHovered: island.hovered
+        || launcherArea.containsMouse
+        || notifArea.containsMouse
+        || settingsArea.containsMouse
 }
