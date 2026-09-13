@@ -76,6 +76,8 @@ QtObject {
     readonly property bool autoHideButtons: false
     readonly property bool autoReturn: false
     readonly property int autoReturnDelay: 4000
+    // the mpris mode's prev/toggle/next row; off keeps that mode purely read-only
+    readonly property bool showMprisControls: true
     readonly property int hyprBorder: 2
     readonly property int hyprRounding: 8
 }

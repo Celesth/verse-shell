@@ -181,6 +181,8 @@ Singleton {
             return Settings.autoReturn ? "on" : "off";
         case "autoReturnDelay":
             return (Settings.autoReturnDelay / 1000).toFixed(0) + " s";
+        case "showMprisControls":
+            return Settings.showMprisControls ? "on" : "off";
         case "hyprBorder":
             return Settings.hyprBorder + " px";
         case "hyprRounding":
@@ -299,6 +301,9 @@ Singleton {
             break;
         case "autoReturnDelay":
             Settings.autoReturnDelay = Math.max(1000, Math.min(15000, Settings.autoReturnDelay + dir * 1000));
+            break;
+        case "showMprisControls":
+            Settings.showMprisControls = !Settings.showMprisControls;
             break;
         case "hyprBorder":
             Settings.hyprBorder = Math.max(0, Math.min(10, Settings.hyprBorder + dir));
@@ -505,6 +510,9 @@ Singleton {
             break;
         case "autoReturnDelay":
             Settings.autoReturnDelay = 4000;
+            break;
+        case "showMprisControls":
+            Settings.showMprisControls = true;
             break;
         case "hyprBorder":
             Settings.hyprBorder = 2;

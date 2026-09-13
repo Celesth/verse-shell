@@ -135,6 +135,7 @@ JsonAdapter {
     property bool autoHideButtons: Defaults.autoHideButtons
     property bool autoReturn: Defaults.autoReturn
     property int autoReturnDelay: Defaults.autoReturnDelay
+    property bool showMprisControls: Defaults.showMprisControls
     property int hyprBorder: 2
     property int hyprRounding: 8
 

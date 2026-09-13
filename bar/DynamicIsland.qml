@@ -31,30 +31,60 @@ Item {
     height: 28
 
     // ── state source: one place focus → display is decided ──
-    readonly property var activeWin: Hyprland.activeWindow
-    readonly property string rawTitle: activeWin?.title ?? ""
-    readonly property string winClass: activeWin?.class ?? ""
-    readonly property url winIcon: activeWin?.icon ?? ""
+    // Quickshell.Hyprland.activeWindow is the reactive focused window; `.title`
+    // is what the compositor reports, `.class` is its app class. All UI reads
+    // displayTitle, never the model, so the fallback lives in exactly one place.
+    readonly property var focusedWindow: Hyprland.activeWindow
+    property string activeTitle: focusedWindow?.title ?? ""
+    readonly property string appClass: focusedWindow?.class ?? ""
+    // title → class → "Desktop"; guaranteed to resolve to a string, never
+    // undefined/null/"[object Object]"
     readonly property string displayTitle: {
-        const t = (rawTitle || "").trim();
+        const t = (root.activeTitle || "").trim();
         if (t !== "") return t;
-        const c = (winClass || "").trim();
-        return c !== "" ? c : "";
+        const c = (root.appClass || "").trim();
+        return c !== "" ? c : "Desktop";
     }
-    readonly property bool hasWindow: displayTitle !== ""
 
-    // ── geometry: width tracks whichever mode's row is showing, clamped ──
-    readonly property real minW: 176
+    // ── geometry: width tracks whichever mode's content is showing, clamped ──
+    readonly property real minW: 196
     readonly property real maxW: 440
     readonly property real padX: 20
-    // the overview row's non-title siblings: window glyph 16 + gaps 8*3 +
-    // bullet ~8 + clock label ~80
-    readonly property real overviewFixed: 16 + 24 + 8 + 80
-    readonly property real titleMax: Math.max(120, root.maxW - root.padX - root.overviewFixed)
+    // The overview's three zones: date (left) / title (centered) / time (right).
+    // Flank widths come from TextMetrics matching the Date/Time labels exactly,
+    // so the pill tracks the *actual* rendered widths ("Sep 13" vs "MMM d",
+    // "9:25 AM" vs "11:59 PM"). overviewGap is the breathing room between zones;
+    // titleMax caps the title band to whatever both flanks leave over, so a long
+    // title elides instead of ever shoving date or time off the pill ends.
+    readonly property real overviewGap: 18
+    readonly property real dateW: Math.min(ovDateMetrics.advanceWidth, 90)
+    readonly property real timeW: Math.min(ovTimeMetrics.advanceWidth, 90)
+    readonly property real titleMax: Math.max(110,
+        root.maxW - root.padX - root.dateW - root.timeW - 2 * root.overviewGap)
+    readonly property real overviewRowW: root.dateW + root.overviewGap
+        + Math.min(root.titleW, root.titleMax)
+        + root.overviewGap + root.timeW
     // the mpris row's non-track siblings: state glyph + gaps + divider + the
     // three 20px controls
     readonly property real mprisFixed: 150
     readonly property real trackMax: Math.max(140, root.maxW - root.padX - root.mprisFixed)
+
+    TextMetrics {
+        id: ovDateMetrics
+        font { family: Theme.fontFamily; pixelSize: Theme.fontSize(12) }
+        text: root.dateStr
+    }
+    TextMetrics {
+        id: ovTimeMetrics
+        font { family: Theme.fontFamily; pixelSize: Theme.fontSize(12) }
+        text: root.timeStr
+    }
+    TextMetrics {
+        id: ovTitleMetrics
+        font { family: Theme.fontFamily; pixelSize: Theme.fontSize(12) }
+        text: root.displayTitle
+    }
+    readonly property real titleW: Math.min(ovTitleMetrics.advanceWidth, root.titleMax)
 
     width: Math.min(root.maxW, Math.max(root.minW, root.activeLayer.implicitWidth + root.padX))
     Behavior on width { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
@@ -62,6 +92,14 @@ Item {
 
     // ── which mode is showing, and the four stacked layers over it ──
     property int mode: root.modeOverview
+    // one wheel gesture = exactly one mode change: while a transition is running
+    // (out fade → width morph → in fade) further wheel events are swallowed, never
+    // queued, so two modes can never be caught visibly stacked. Only the incoming
+    // fade's natural completion clears it (transitionSettled below).
+    property bool modeTransitioning: false
+    // marks the *latest* setLayerTarget call as an enter (1) vs an out (0), so
+    // the per-layer anims' shared onFinished knows whether to release the lock
+    property bool entering: false
     readonly property var layerItems: [overviewLayer, workspaceLayer, trayLayer, mprisLayer]
     readonly property Item activeLayer: root.layerItems[root.mode]
 
@@ -114,15 +152,29 @@ Item {
     readonly property var switchAnims: [overviewAnim, workspaceAnim, trayAnim, mprisAnim]
 
     function setLayerTarget(layer: Item, opacityTo: real, xTo: real): void {
+        root.entering = opacityTo >= 1;
         const anim = root.switchAnims[root.layerItems.indexOf(layer)];
         anim.opTo = opacityTo;
         anim.xTo = xTo;
         anim.restart();
     }
 
+    // the per-layer anims all finish through here; only an *enter* completion is
+    // allowed to drop the lock (the out fade finishing must not), and the full
+    // out + width-morph + in sequence has to have played out by then.
+    function transitionSettled(): void {
+        if (!root.entering)
+            return;
+        root.entering = false;
+        root.modeTransitioning = false;
+    }
+
     function transitionMode(next: int, dir: int): void {
         if (next === root.mode)
             return;
+        if (root.modeTransitioning)
+            return;
+        root.modeTransitioning = true;
         const v = dir >= 0 ? 1 : -1;
         const oldIdx = root.mode;
         root.mode = next;
@@ -173,6 +225,7 @@ Item {
         property alias xTo: overviewX.to
         NumberAnimation { id: overviewOpacity; target: overviewLayer; property: "opacity"; duration: 170; easing.type: Easing.OutCubic }
         NumberAnimation { id: overviewX; target: overviewLayer; property: "x"; duration: 220; easing.type: Easing.OutCubic }
+        onFinished: root.transitionSettled()
     }
     ParallelAnimation {
         id: workspaceAnim
@@ -180,6 +233,7 @@ Item {
         property alias xTo: workspaceX.to
         NumberAnimation { id: workspaceOpacity; target: workspaceLayer; property: "opacity"; duration: 170; easing.type: Easing.OutCubic }
         NumberAnimation { id: workspaceX; target: workspaceLayer; property: "x"; duration: 220; easing.type: Easing.OutCubic }
+        onFinished: root.transitionSettled()
     }
     ParallelAnimation {
         id: trayAnim
@@ -187,6 +241,7 @@ Item {
         property alias xTo: trayX.to
         NumberAnimation { id: trayOpacity; target: trayLayer; property: "opacity"; duration: 170; easing.type: Easing.OutCubic }
         NumberAnimation { id: trayX; target: trayLayer; property: "x"; duration: 220; easing.type: Easing.OutCubic }
+        onFinished: root.transitionSettled()
     }
     ParallelAnimation {
         id: mprisAnim
@@ -194,6 +249,7 @@ Item {
         property alias xTo: mprisX.to
         NumberAnimation { id: mprisOpacity; target: mprisLayer; property: "opacity"; duration: 170; easing.type: Easing.OutCubic }
         NumberAnimation { id: mprisX; target: mprisLayer; property: "x"; duration: 220; easing.type: Easing.OutCubic }
+        onFinished: root.transitionSettled()
     }
 
     // ── auto-return: optional drift back to overview after a quiet spell ──
@@ -237,71 +293,51 @@ Item {
         }
     }
 
-    // ── 0 · overview: [window icon|calendar] title/date • time ──
+    // ── 0 · overview: date (left) · active title (centered) · time (right) ──
+    // Three independent zones instead of one row: the title band sits centered
+    // on the pill, so it stays pinned to the visual middle no matter how wide
+    // the date/time flanks get. The title always resolves via displayTitle
+    // (title → class → "Desktop"), so there is no icon or watch glyph to worry
+    // about - just text. The band's max width is whatever flank space leaves
+    // over (titleMax below), capping how far it may grow before eliding.
     Item {
         id: overviewLayer
         z: 1
         width: parent.width
         height: parent.height
         opacity: 1
-        implicitWidth: overviewRow.implicitWidth
 
-        Row {
-            id: overviewRow
+        // the pill widths from these three exactly; see the root geometry block
+        implicitWidth: root.overviewRowW
+
+        AnimatedLabel {
+            id: ovDate
+            anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
+            content: root.dateStr
+            color: Theme.muted
+            font.pixelSize: Theme.fontSize(12)
+            font.family: Theme.fontFamily
+        }
+
+        AnimatedLabel {
+            id: ovTitle
             anchors.centerIn: parent
-            spacing: 8
+            content: root.displayTitle
+            color: Theme.fg
+            font.pixelSize: Theme.fontSize(12)
+            font.family: Theme.fontFamily
+            maxWidth: root.titleMax
+        }
 
-            Item {
-                anchors.verticalCenter: parent.verticalCenter
-                width: 16
-                height: 16
-
-                Image {
-                    anchors.fill: parent
-                    visible: root.hasWindow
-                    source: root.winIcon
-                    sourceSize.width: 32
-                    sourceSize.height: 32
-                    fillMode: Image.PreserveAspectFit
-                    smooth: false
-                }
-
-                Text {
-                    anchors.centerIn: parent
-                    visible: !root.hasWindow
-                    text: "\ue425"
-                    font.family: Icons.family
-                    font.pixelSize: Theme.fontSize(11)
-                    color: Qt.alpha(Theme.muted, 0.7)
-                }
-            }
-
-            AnimatedLabel {
-                id: overviewMain
-                anchors.verticalCenter: parent.verticalCenter
-                content: root.hasWindow ? root.displayTitle : root.dateStr
-                color: Theme.fg
-                font.pixelSize: Theme.fontSize(12)
-                font.family: Theme.fontFamily
-                maxWidth: root.titleMax
-            }
-
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: "•"
-                color: Qt.alpha(Theme.muted, 0.55)
-                font.pixelSize: Theme.fontSize(11)
-                font.family: Theme.fontFamily
-            }
-
-            AnimatedLabel {
-                id: overviewTime
-                anchors.verticalCenter: parent.verticalCenter
-                content: root.timeStr
-                color: Theme.muted
-                font.pixelSize: Theme.fontSize(12)
-                font.family: Theme.fontFamily
-            }
+        AnimatedLabel {
+            id: ovTime
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            content: root.timeStr
+            color: Theme.muted
+            font.pixelSize: Theme.fontSize(12)
+            font.family: Theme.fontFamily
         }
     }
 
@@ -472,7 +508,7 @@ Item {
             Rectangle {
                 id: prevBtn
                 anchors.verticalCenter: parent.verticalCenter
-                visible: root.player?.canGoPrevious ?? false
+                visible: (Settings.showMprisControls ?? true) && (root.player?.canGoPrevious ?? false)
                 width: 20
                 height: 20
                 radius: height / 2
@@ -499,7 +535,7 @@ Item {
             Rectangle {
                 id: toggleBtn
                 anchors.verticalCenter: parent.verticalCenter
-                visible: root.player?.canTogglePlaying ?? false
+                visible: (Settings.showMprisControls ?? true) && (root.player?.canTogglePlaying ?? false)
                 width: 20
                 height: 20
                 radius: height / 2
@@ -526,7 +562,7 @@ Item {
             Rectangle {
                 id: nextBtn
                 anchors.verticalCenter: parent.verticalCenter
-                visible: root.player?.canGoNext ?? false
+                visible: (Settings.showMprisControls ?? true) && (root.player?.canGoNext ?? false)
                 width: 20
                 height: 20
                 radius: height / 2
