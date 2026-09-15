@@ -10,7 +10,6 @@ import QtQuick
 QtObject {
     readonly property string wallCommand: 'export PATH="$HOME/.local/bin:$PATH"; verse-wallpaper'
     readonly property string wallpaperDir: "~/Pictures/Wallpapers"
-    readonly property bool wallpaperParallax: false
     readonly property bool glassEffect: false
     // how an applied wallpaper is scaled onto the display: "crop" fills the
     // screen and crops overflow, "fit" shows the whole image letterboxed,

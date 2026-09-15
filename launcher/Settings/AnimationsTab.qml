@@ -34,7 +34,7 @@ Column {
         NumberAnimation { duration: Anim.menu(420); easing.type: Easing.OutCubic }
     }
 
-    spacing: 14
+    spacing: 16
 
     // How much bigger than their design size the previews are drawn. One
     // figure, picked here, for every preview on the tab. This was solved

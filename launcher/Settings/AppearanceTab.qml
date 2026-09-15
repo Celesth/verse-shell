@@ -15,12 +15,12 @@ Column {
         NumberAnimation { duration: Anim.menu(420); easing.type: Easing.OutCubic }
     }
 
-    spacing: 14
+    spacing: 16
 
     SettingRow { key: "glassEffect"; label: "Liquid glass"; hint: "transparent surfaces with frosted edges" }
     SettingRow { key: "roundedCorners"; label: "Rounded corners" }
     SettingRow { key: "barEnabled"; label: "Show bar" }
-    SettingRow { key: "barExclusive"; label: "Bar reserves space" }
+    SettingRow { key: "barExclusive"; label: "Bar reserves space"; hint: "reserves only the compact bar height" }
     SettingRow { key: "barPadding"; label: "Bar padding"; hint: "extra gap between bar and windows" }
     SettingRow { key: "autoHideButtons"; label: "Auto-hide bar buttons"; hint: "launcher, bell & settings appear on hover" }
     SettingRow { key: "autoReturn"; label: "Auto-return to overview"; hint: "island drifts back after a quiet moment" }

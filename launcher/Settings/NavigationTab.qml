@@ -26,7 +26,7 @@ Column {
         NumberAnimation { duration: Anim.menu(420); easing.type: Easing.OutCubic }
     }
 
-    spacing: 14
+    spacing: 16
 
     Repeater {
         id: bindRepeater

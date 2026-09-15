@@ -166,11 +166,6 @@ JsonAdapter {
     // the preview: what the applied wallpaper does on the desktop is
     // wallCommand's business either way.
     property bool wallpaperLive: true
-    // zooms the applied wallpaper in and pans it to follow the cursor (see
-    // the wallpaper/ window). Only meaningful when the Quickshell wallpaper
-    // window is the wallpaper the user looks at - it does not affect the
-    // compositor's own (wallCommand) wallpaper.
-    property bool wallpaperParallax: Defaults.wallpaperParallax
     // scale mode for the applied wallpaper (see Defaults.wallpaperFit)
     property string wallpaperFit: Defaults.wallpaperFit
     property string wallpaperDir: Defaults.wallpaperDir
@@ -347,6 +342,13 @@ JsonAdapter {
         // "tiles" (the grid picker) renamed "grid"
         if (settings.wallpaperStyle === "tiles") {
             settings.wallpaperStyle = "grid";
+            settings.save();
+        }
+        // Move old Hyprpaper-based selectors to verse-wallpaper, which uses
+        // awww for images and animated GIFs. Leave all other custom commands
+        // untouched.
+        if (/\bhyprpaper\b/.test(settings.wallCommand || "")) {
+            settings.wallCommand = Defaults.wallCommand;
             settings.save();
         }
         if (!["grid", "carousel", "carousel-flat"].includes(settings.wallpaperStyle)) {

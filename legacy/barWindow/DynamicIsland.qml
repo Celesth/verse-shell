@@ -7,18 +7,19 @@ import "root:/config"
 import "root:/services"
 import "root:/ui"
 
-// The scrollable island: one persistent pill whose *content* is four stacked
-// modes - 0 Overview (window title + 12h clock, or "MMM d • H:mm AP" when no
-// window), 1 Workspaces, 2 System Tray, 3 MPRIS - swapped by scrolling over
-// the island. The pill background never leaves; the *layer* under it swaps
-// with a directional crossfade (old content slides out one way while the new
-// slides in from the other), and its width follows whichever mode is showing
-// through one shared Behavior.
+// The HUD's changeable center: one surface whose *content* is four stacked
+// modes - 0 Overview (workspaces · active title · date/time, all in the one
+// floating panel), 1 Workspaces (the indicator alone, spread out), 2 System
+// Tray, 3 MPRIS - swapped by scrolling over the island. The floating panel
+// frame never leaves (that is BarWindow's job now); only this content layer
+// swaps, with a directional crossfade (old slides out one way while the new
+// slides in from the other), and the panel width follows whichever mode is
+// showing through one shared Behavior - a subtle resize, not a morph.
 //
 // Focus is tracked from Quickshell.Hyprland.activeWindow, the clock ticks on a
 // 30s timer, and every string that can change while sitting still (window
 // title, track title, the time) goes through ui/AnimatedLabel so a swap never
-// jumps out from under the morphing pill.
+// jumps out from under the panel.
 Item {
     id: root
 
@@ -27,8 +28,8 @@ Item {
     readonly property int modeTray: 2
     readonly property int modeMpris: 3
 
-    implicitHeight: 28
-    height: 28
+    implicitHeight: 30
+    height: 30
 
     // ── state source: one place focus → display is decided ──
     // Quickshell.Hyprland.activeWindow is the reactive focused window; `.title`
@@ -47,36 +48,44 @@ Item {
     }
 
     // ── geometry: width tracks whichever mode's content is showing, clamped ──
-    readonly property real minW: 196
-    readonly property real maxW: 440
+    // The island sits between BarWindow's launcher and notification/settings
+    // clusters inside the floating panel, so it only needs to be as wide as its
+    // own content; the panel itself clamps to the HUD's 420-900px band.
+    readonly property real minW: 320
+    readonly property real maxW: 700
     readonly property real padX: 20
-    // The overview's three zones: date (left) / title (centered) / time (right).
-    // Flank widths come from TextMetrics matching the Date/Time labels exactly,
-    // so the pill tracks the *actual* rendered widths ("Sep 13" vs "MMM d",
-    // "9:25 AM" vs "11:59 PM"). overviewGap is the breathing room between zones;
-    // titleMax caps the title band to whatever both flanks leave over, so a long
-    // title elides instead of ever shoving date or time off the pill ends.
-    readonly property real overviewGap: 18
-    readonly property real dateW: Math.min(ovDateMetrics.advanceWidth, 90)
+    // The overview's three zones: workspaces (left) / active title (centered) /
+    // date + time (right). Flank widths come from the actual rendered labels
+    // (TextMetrics matching Date/Time exactly), so the panel tracks the real
+    // widths ("SEP 3" vs "SEP 13", "9:25 PM" vs "11:59 PM"). overviewGap is the
+    // breathing room between zones; titleBand caps the title so a long title
+    // elides instead of ever shoving the flanks off the panel ends.
+    readonly property real overviewGap: 14
+    readonly property real wsW: wsOverview.implicitWidth
+    readonly property real dateW: Math.min(ovDateMetrics.advanceWidth, 80)
     readonly property real timeW: Math.min(ovTimeMetrics.advanceWidth, 90)
-    readonly property real titleMax: Math.max(110,
-        root.maxW - root.padX - root.dateW - root.timeW - 2 * root.overviewGap)
-    readonly property real overviewRowW: root.dateW + root.overviewGap
-        + Math.min(root.titleW, root.titleMax)
-        + root.overviewGap + root.timeW
+    // the dt row's chrome on top of date+time: the diamond glyph, three 7px
+    // spacings and the interposed "·" (matches dtRow's layout below)
+    readonly property real dtW: root.dateW + root.timeW + 36
+    readonly property real titleBand: Math.max(140,
+        Math.min(320, root.maxW - root.wsW - root.dtW - 2 * root.overviewGap))
+    readonly property real overviewRowW: root.wsW + root.overviewGap
+        + Math.min(root.titleW, root.titleBand)
+        + root.overviewGap + root.dtW
     // the mpris row's non-track siblings: state glyph + gaps + divider + the
     // three 20px controls
     readonly property real mprisFixed: 150
-    readonly property real trackMax: Math.max(140, root.maxW - root.padX - root.mprisFixed)
+    readonly property real trackMax: Math.max(160,
+        Math.min(340, root.maxW - root.padX - root.mprisFixed))
 
     TextMetrics {
         id: ovDateMetrics
-        font { family: Theme.fontFamily; pixelSize: Theme.fontSize(12) }
+        font { family: Theme.fontFamily; pixelSize: Theme.fontSize(11) }
         text: root.dateStr
     }
     TextMetrics {
         id: ovTimeMetrics
-        font { family: Theme.fontFamily; pixelSize: Theme.fontSize(12) }
+        font { family: Theme.fontFamily; pixelSize: Theme.fontSize(11) }
         text: root.timeStr
     }
     TextMetrics {
@@ -84,7 +93,7 @@ Item {
         font { family: Theme.fontFamily; pixelSize: Theme.fontSize(12) }
         text: root.displayTitle
     }
-    readonly property real titleW: Math.min(ovTitleMetrics.advanceWidth, root.titleMax)
+    readonly property real titleW: Math.min(ovTitleMetrics.advanceWidth, root.titleBand)
 
     width: Math.min(root.maxW, Math.max(root.minW, root.activeLayer.implicitWidth + root.padX))
     Behavior on width { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
@@ -187,7 +196,7 @@ Item {
         // the outgoing layer always rests hidden, and the incoming one has
         // always been hidden until now (see the layers' resting opacity: 0) -
         // so a switch is: old fades out alone, then the new slides in once the
-        // pill is clear. The two never overlap, unlike a literal crossfade.
+        // panel is clear. The two never overlap, unlike a literal crossfade.
         out.opacity = 1;
         out.x = 0;
         root.setLayerTarget(out, 0, -v * 18);
@@ -198,9 +207,9 @@ Item {
         root.kickAutoReturn();
     }
 
-    // Enter is deferred until the pill has finished reshaping to the new mode
+    // Enter is deferred until the panel has finished reshaping to the new mode
     // (the width Behavior runs for 260ms), so the layout settles before the
-    // content fades in instead of the two fighting across the morph.
+    // content fades in instead of the two fighting across the resize.
     // Restarted (not re-armed) by the next transition, so rapid scrolling only
     // ever schedules the newest mode's entrance.
     Timer {
@@ -269,11 +278,11 @@ Item {
             autoReturnT.start();
     }
 
-    // ── shared hover state for the bar's auto-hide buttons ──
+    // ── shared hover state for the panel's auto-hide buttons ──
     readonly property bool hovered: wheelArea.containsMouse
 
     // ── the scroller: first child (lowest z), so the modes' own controls sit
-    // above it and keep clicks; bare pill space gives wheel (and the overview
+    // above it and keep clicks; bare panel space gives wheel (and the overview
     // gives its calendar click) to this area.
     MouseArea {
         id: wheelArea
@@ -293,13 +302,15 @@ Item {
         }
     }
 
-    // ── 0 · overview: date (left) · active title (centered) · time (right) ──
-    // Three independent zones instead of one row: the title band sits centered
-    // on the pill, so it stays pinned to the visual middle no matter how wide
-    // the date/time flanks get. The title always resolves via displayTitle
-    // (title → class → "Desktop"), so there is no icon or watch glyph to worry
-    // about - just text. The band's max width is whatever flank space leaves
-    // over (titleMax below), capping how far it may grow before eliding.
+    // ── 0 · overview: workspaces (left) · active title (centered) · date/time (right) ──
+    // The three zones of the resting HUD read as one panel: the workspace
+    // indicator anchors left, the date/time pair anchor right, and the title
+    // band sits centered on the whole thing so it stays pinned to the visual
+    // middle no matter how wide the flanks get. Thin accent ticks between the
+    // zones are the only chrome. The title always resolves via displayTitle
+    // (title → class → "Desktop"); titleBand caps how far it may grow before
+    // eliding. Two very light polls: wsOverview only while this mode is showing,
+    // wsMode (the spread-out view) only while mode 1 is - never both at once.
     Item {
         id: overviewLayer
         z: 1
@@ -307,17 +318,23 @@ Item {
         height: parent.height
         opacity: 1
 
-        // the pill widths from these three exactly; see the root geometry block
+        // the panel width comes from these exactly; see the root geometry block
         implicitWidth: root.overviewRowW
 
-        AnimatedLabel {
-            id: ovDate
+        Workspaces {
+            id: wsOverview
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
-            content: root.dateStr
-            color: Theme.muted
-            font.pixelSize: Theme.fontSize(12)
-            font.family: Theme.fontFamily
+            active: root.mode === root.modeOverview
+        }
+
+        Rectangle {
+            anchors.left: wsOverview.right
+            anchors.leftMargin: root.overviewGap / 2 - 1
+            anchors.verticalCenter: parent.verticalCenter
+            width: 1
+            height: 14
+            color: Qt.alpha(Theme.accent, 0.16)
         }
 
         AnimatedLabel {
@@ -327,21 +344,65 @@ Item {
             color: Theme.fg
             font.pixelSize: Theme.fontSize(12)
             font.family: Theme.fontFamily
-            maxWidth: root.titleMax
+            maxWidth: root.titleBand
         }
 
-        AnimatedLabel {
-            id: ovTime
+        Rectangle {
+            anchors.right: dtRow.left
+            anchors.rightMargin: root.overviewGap / 2 - 1
+            anchors.verticalCenter: parent.verticalCenter
+            width: 1
+            height: 14
+            color: Qt.alpha(Theme.accent, 0.16)
+        }
+
+        Row {
+            id: dtRow
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
-            content: root.timeStr
-            color: Theme.muted
-            font.pixelSize: Theme.fontSize(12)
-            font.family: Theme.fontFamily
+            spacing: 7
+
+            // sparse marker the panel uses so the time doesn't float alone
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: "\u25c7"
+                font.family: Theme.fontFamily
+                font.pixelSize: Theme.fontSize(9)
+                color: Qt.alpha(Theme.accent, 0.65)
+            }
+
+            AnimatedLabel {
+                id: ovDate
+                anchors.verticalCenter: parent.verticalCenter
+                content: root.dateStr
+                color: Qt.alpha(Theme.muted, 0.95)
+                font.pixelSize: Theme.fontSize(11)
+                font.family: Theme.fontFamily
+                maxWidth: root.dateW
+            }
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: "\u00b7"
+                font.family: Theme.fontFamily
+                font.pixelSize: Theme.fontSize(11)
+                color: Qt.alpha(Theme.muted, 0.45)
+            }
+
+            AnimatedLabel {
+                id: ovTime
+                anchors.verticalCenter: parent.verticalCenter
+                content: root.timeStr
+                color: Theme.fg
+                opacity: 0.9
+                font.pixelSize: Theme.fontSize(11)
+                font.family: Theme.fontFamily
+                maxWidth: root.timeW
+            }
         }
     }
 
-    // ── 1 · workspaces: the shared monitor poll, housing only while here ──
+    // ── 1 · workspaces: the dedicated view, sharing the same polling data ──
     Item {
         id: workspaceLayer
         z: 1
@@ -625,7 +686,7 @@ Item {
     function updateTime() {
         const now = new Date();
         timeStr = now.toLocaleTimeString(Qt.locale(), "h:mm AP");
-        dateStr = now.toLocaleDateString(Qt.locale(), "MMM d");
+        dateStr = now.toLocaleDateString(Qt.locale(), "MMM d").toUpperCase();
         fullDate = now.toLocaleDateString(Qt.locale(), "dddd, MMMM d, yyyy");
     }
 }

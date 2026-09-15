@@ -25,13 +25,18 @@ Item {
     onResolvedTabIndexChanged: if (resolvedTabIndex >= 0)
         tabIndex = resolvedTabIndex
 
-    readonly property real sidebarWidth: 100
-    readonly property real pad: 20
-    readonly property real maxContentHeight: LauncherState.screenHeight * 0.72
+    readonly property real sidebarWidth: 88
+    readonly property real pad: 16
+    readonly property real headerHeight: 14
+    readonly property real screenMargin: 12
+    readonly property real maxContentHeight: LauncherState.screenHeight * 0.52
 
-    anchors.centerIn: parent
+    // Keep the first opening centered, then let the small top grip position
+    // this utility window anywhere useful on the current screen.
+    x: (parent.width - width) / 2
+    y: (parent.height - height) / 2
     width: LauncherState.settingsWidth
-    height: root.pad + Math.min(scrollFlick.contentHeight + 4, root.maxContentHeight) + root.pad
+    height: root.pad + root.headerHeight + Math.min(scrollFlick.contentHeight + 4, root.maxContentHeight) + root.pad
     transform: Translate {
         y: LauncherState.powerPull - LauncherState.rebootPull
     }
@@ -52,9 +57,8 @@ Item {
     }
     ParallelAnimation {
         id: enterAnim
-        NumberAnimation { target: root; property: "opacity"; from: 0; to: 1; duration: Anim.menu(200); easing.type: Easing.OutCubic }
-        NumberAnimation { target: root; property: "scale"; from: 0.9; to: 1; duration: Anim.menu(500); easing.type: Easing.OutBack; easing.overshoot: 1.8 }
-        NumberAnimation { target: root; property: "anchors.verticalCenterOffset"; from: 40; to: 0; duration: Anim.menu(500); easing.type: Easing.OutBack; easing.overshoot: 1.8 }
+        NumberAnimation { target: root; property: "opacity"; from: 0; to: 1; duration: Anim.menu(120); easing.type: Easing.OutCubic }
+        NumberAnimation { target: root; property: "scale"; from: 0.96; to: 1; duration: Anim.menu(180); easing.type: Easing.OutCubic }
     }
 
     Rectangle {
@@ -63,6 +67,34 @@ Item {
         color: Settings.glassEffect ? Qt.alpha(Theme.surface, 0.65) : Qt.alpha(Theme.surface, 0.92)
         border.width: Settings.glassEffect ? 1 : 0
         border.color: Settings.glassEffect ? Qt.alpha(Theme.fg, 0.12) : "transparent"
+    }
+
+    // A deliberately narrow drag affordance keeps all settings controls free
+    // for normal interaction while making the whole panel easy to reposition.
+    MouseArea {
+        id: windowGrip
+        anchors.top: parent.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        width: 70
+        height: 18
+        z: 10
+        hoverEnabled: true
+        cursorShape: Qt.SizeAllCursor
+        drag.target: root
+        drag.axis: Drag.XAndYAxis
+        drag.minimumX: root.screenMargin
+        drag.maximumX: Math.max(root.screenMargin, root.parent.width - root.width - root.screenMargin)
+        drag.minimumY: root.screenMargin
+        drag.maximumY: Math.max(root.screenMargin, root.parent.height - root.height - root.screenMargin)
+
+        Rectangle {
+            anchors.centerIn: parent
+            width: 24
+            height: 3
+            radius: 2
+            color: Qt.alpha(Theme.muted, windowGrip.containsMouse ? 0.75 : 0.42)
+            Behavior on color { ColorAnimation { duration: 120 } }
+        }
     }
 
     // ─── sidebar ───
@@ -193,10 +225,10 @@ Item {
         anchors.left: sidebar.right
         anchors.leftMargin: 4
         anchors.top: parent.top
-        anchors.topMargin: root.pad
+        anchors.topMargin: root.pad + root.headerHeight
         anchors.right: parent.right
         anchors.rightMargin: root.pad
-        height: root.height - root.pad * 2
+        height: root.height - root.pad * 2 - root.headerHeight
         clip: true
 
         readonly property real innerWidth: width
@@ -227,7 +259,7 @@ Item {
                 Behavior on x { NumberAnimation { duration: Anim.menu(420); easing.type: Easing.OutCubic } }
                 visible: x > -contentArea.innerWidth * 1.5 && x < contentArea.innerWidth * 1.5
                 width: contentArea.innerWidth
-                spacing: 14
+                spacing: 16
                 GeneralTab { width: parent.width; slideIndex: 0; activeIndex: root.tabIndex; x: 0 }
             }
             Column {
@@ -236,7 +268,7 @@ Item {
                 Behavior on x { NumberAnimation { duration: Anim.menu(420); easing.type: Easing.OutCubic } }
                 visible: x > -contentArea.innerWidth * 1.5 && x < contentArea.innerWidth * 1.5
                 width: contentArea.innerWidth
-                spacing: 14
+                spacing: 16
                 AppearanceTab { width: parent.width; slideIndex: 1; activeIndex: root.tabIndex; x: 0 }
             }
             Column {
@@ -245,7 +277,7 @@ Item {
                 Behavior on x { NumberAnimation { duration: Anim.menu(420); easing.type: Easing.OutCubic } }
                 visible: x > -contentArea.innerWidth * 1.5 && x < contentArea.innerWidth * 1.5
                 width: contentArea.innerWidth
-                spacing: 14
+                spacing: 16
                 PagesTab { width: parent.width; slideIndex: 2; activeIndex: root.tabIndex; x: 0 }
             }
             Column {
@@ -254,7 +286,7 @@ Item {
                 Behavior on x { NumberAnimation { duration: Anim.menu(420); easing.type: Easing.OutCubic } }
                 visible: x > -contentArea.innerWidth * 1.5 && x < contentArea.innerWidth * 1.5
                 width: contentArea.innerWidth
-                spacing: 14
+                spacing: 16
                 AnimationsTab { width: parent.width; slideIndex: 3; activeIndex: root.tabIndex; x: 0 }
             }
             Column {
@@ -263,7 +295,7 @@ Item {
                 Behavior on x { NumberAnimation { duration: Anim.menu(420); easing.type: Easing.OutCubic } }
                 visible: x > -contentArea.innerWidth * 1.5 && x < contentArea.innerWidth * 1.5
                 width: contentArea.innerWidth
-                spacing: 14
+                spacing: 16
                 NavigationTab { width: parent.width; slideIndex: 4; activeIndex: root.tabIndex; x: 0 }
             }
             Column {
@@ -272,7 +304,7 @@ Item {
                 Behavior on x { NumberAnimation { duration: Anim.menu(420); easing.type: Easing.OutCubic } }
                 visible: x > -contentArea.innerWidth * 1.5 && x < contentArea.innerWidth * 1.5
                 width: contentArea.innerWidth
-                spacing: 14
+                spacing: 16
                 FlyoutsTab { width: parent.width; slideIndex: 5; activeIndex: root.tabIndex; x: 0 }
             }
             Repeater {
@@ -284,7 +316,7 @@ Item {
                     x: (slideIndex - root.tabIndex) * contentArea.innerWidth
                     visible: x > -contentArea.innerWidth * 1.5 && x < contentArea.innerWidth * 1.5
                     width: contentArea.innerWidth
-                    spacing: 14
+                    spacing: 16
                     Loader { sourceComponent: modelData.component }
                 }
             }

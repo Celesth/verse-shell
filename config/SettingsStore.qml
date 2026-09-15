@@ -51,7 +51,6 @@ Scope {
             Settings.scrambleSections = Object.assign({}, Settings.scrambleSections);
             Settings.heal();
             Settings.loaded();
-            root.syncParallaxMarker();
 
             if (!root.themeKicked) {
                 root.themeKicked = true;
@@ -87,10 +86,6 @@ Scope {
         let pick = walls[Math.floor(Math.random() * walls.length)];
         Settings.currentWallpaper = pick.path;
         Settings.save();
-        // with the Quickshell parallax wallpaper on, drop the compositor's own
-        // wallpaper before applying, or it lingers behind a second copy
-        if (Settings.wallpaperParallax)
-            Quickshell.execDetached(["bash", "-c", "pkill hyprpaper 2>/dev/null; pkill mpvpaper 2>/dev/null; true"]);
         // apply the wallpaper via the user's wallCommand (verse-wallpaper by
         // default), same path as LauncherWindow.runWallCommand
         Quickshell.execDetached(["bash", "-c", `
@@ -102,31 +97,10 @@ Scope {
         Theme.sampleWallpaper();
     }
 
-    // When toggled on, the parallax wallpaper takes over the desktop: kill the
-    // compositor's own wallpaper (hyprpaper/mpvpaper) and write a deterministic
-    // /tmp marker the watchdog reads so it won't respawn hyprpaper until the
-    // effect is off. A marker file, not settings.json - settings.json's
-    // absolute path varies with the shell env, so the marker is the reliable
-    // hand-off.
-    function syncParallaxMarker(): void {
-        if (Settings.wallpaperParallax) {
-            Quickshell.execDetached(["bash", "-c", "touch /tmp/verse-parallax; pkill hyprpaper 2>/dev/null; pkill mpvpaper 2>/dev/null; true"]);
-        } else {
-            Quickshell.execDetached(["bash", "-c", "rm -f /tmp/verse-parallax; true"]);
-        }
-    }
-
     Connections {
         target: Settings
         function onSaveRequested() {
             store.writeAdapter();
-        }
-    }
-
-    Connections {
-        target: Settings
-        function onWallpaperParallaxChanged() {
-            root.syncParallaxMarker();
         }
     }
 

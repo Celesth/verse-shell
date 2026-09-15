@@ -13,6 +13,13 @@ import "root:/config"
 Singleton {
     id: root
 
+    // Bundled from the official Google Fonts Google Sans release. Text is the
+    // UI-optimised cut, and loading the three weights prevents Qt from having
+    // to synthesize Medium/Bold labels.
+    FontLoader { id: googleSansRegular; source: Qt.resolvedUrl("../fonts/GoogleSansText-Regular.ttf") }
+    FontLoader { id: googleSansMedium; source: Qt.resolvedUrl("../fonts/GoogleSansText-Medium.ttf") }
+    FontLoader { id: googleSansBold; source: Qt.resolvedUrl("../fonts/GoogleSansText-Bold.ttf") }
+
     readonly property var presets: [
         {
             id: "amber",
@@ -81,12 +88,12 @@ Singleton {
     // card surface behind both flyouts
     readonly property color flyoutSurface: "#0c0c10"
 
-    // "" (system default) falls back to the GTK monospace font the `verse`
-    // script resolved into QS_FONT_FAMILY at startup (see export_font_family) -
-    // Qt's own font.family: "" resolution isn't reliable in a bare
-    // layer-shell session, the same problem export_icon_theme works around
-    // for icons.
-    readonly property string fontFamily: Settings.fontFamily || Quickshell.env("QS_FONT_FAMILY") || ""
+    // Google Sans Text is the shell default. A deliberate choice in Settings
+    // still wins, so users can switch to any installed family at runtime.
+    readonly property string fontFamily: Settings.fontFamily
+        || googleSansRegular.name
+        || Quickshell.env("QS_FONT_FAMILY")
+        || ""
 
     function fontSize(px: int): int {
         return Math.round(px * Settings.fontScale);

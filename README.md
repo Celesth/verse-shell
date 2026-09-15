@@ -8,7 +8,7 @@ A Hyprland desktop shell built on [Quickshell](https://github.com/quickshell-mir
 verse start
 ```
 
-Or log out and back in — verse and hyprpaper start via autostart.
+Or log out and back in — verse starts via autostart (wallpapers are rendered by awww).
 
 ## Usage
 

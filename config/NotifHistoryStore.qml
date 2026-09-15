@@ -12,9 +12,8 @@ Scope {
         id: store
 
         // /tmp is tmpfs on this system — wiped on reboot. Sits next to the
-        // other session markers verse keeps there (verse-parallax,
-        // verse-tint.png). The cache stays persistent; only the history log
-        // is per-session.
+        // other session markers verse keeps there (verse-tint.png). The cache
+        // stays persistent; only the history log is per-session.
         path: "/tmp/verse-notif-history.json"
         blockLoading: true
         printErrors: false

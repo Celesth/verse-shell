@@ -14,7 +14,7 @@ import "root:/launcher"
 import "root:/services"
 import "root:/startup"
 import "root:/bar"
-import "root:/wallpaper"
+import "root:/app"
 
 // This file is only the wiring: it binds the three persisted stores to disk,
 // puts up the four windows, and exposes the IPC the `verse` script talks to.
@@ -46,9 +46,10 @@ ShellRoot {
     LauncherWindow {
         id: launcher
     }
+    AppLauncher {
+        id: appLauncher
+    }
     BarWindow {}
-    WallpaperWindow {}
-    AppsPanel {}
     VolumeOsd {}
     NotificationFlyout {}
 
@@ -67,11 +68,13 @@ ShellRoot {
         // switches to it and stays open - a different page's keybind reads as
         // "take me there", not "close everything".
         function toggle(page: string): void {
-            if (page === "apps") {
+            // The default Super-key route and `verse toggle apps` share the
+            // dedicated application launcher, rather than the retired bar
+            // AppsPanel component.
+            if (!page || page === "apps") {
                 if (launcher.shown)
                     launcher.exit();
-                else
-                    LauncherState.barAppsOpen = !LauncherState.barAppsOpen;
+                appLauncher.toggle();
                 return;
             }
             const target = LauncherState.resolvePageArg(page);

@@ -25,7 +25,7 @@ Column {
         NumberAnimation { duration: Anim.menu(420); easing.type: Easing.OutCubic }
     }
 
-    spacing: 14
+    spacing: 16
 
     SettingRow { key: "preload"; label: "Preload content"; hint: "stores large content in memory between toggles to improve performance" }
     SettingRow {
@@ -34,7 +34,6 @@ Column {
         hint: "ext-background-effect requires compositor support"
     }
     SettingRow { key: "dimOpacity"; label: "Background opacity" }
-    SettingRow { key: "wallpaperParallax"; label: "Wallpaper parallax"; hint: "zooms the wallpaper in and pans it to follow the cursor" }
 
     // bundles version/build info, this run's recent log, and
     // the latest crash report (if any) for pasting into a

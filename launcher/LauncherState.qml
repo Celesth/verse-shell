@@ -43,10 +43,11 @@ Singleton {
     property real reveal: 0
 
     // Settings pane sizing: percentage of screen width, clamped to reasonable bounds.
-    // settingsWidth includes the ~100px sidebar + padding.
-    readonly property real settingsWidth: Math.max(580, Math.min(900, Math.round(root.screenWidth * 0.48)))
-    readonly property real settingsContentWidth: Math.round(root.settingsWidth - 130)
-    readonly property real settingsSlideStep: Math.round(root.settingsWidth - 130)
+    // Settings is deliberately a compact floating utility window, not a
+    // near-full-screen page. It includes the sidebar and its inner padding.
+    readonly property real settingsWidth: Math.max(520, Math.min(760, Math.round(root.screenWidth * 0.42)))
+    readonly property real settingsContentWidth: Math.round(root.settingsWidth - 112)
+    readonly property real settingsSlideStep: Math.round(root.settingsWidth - 112)
     // shared with the Animations tab's launch preview, which grows the same
     // circle out of the same corner over a stand-in for the screen
     readonly property var originFraction: Anim.launchOrigin()

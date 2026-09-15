@@ -1,17 +1,49 @@
 #!/usr/bin/env bash
-# verse-wallpaper — set wallpaper via hyprpaper (images) or mpvpaper (video)
-# Called by verse with: WALL=<path> BLUR=<path> wallCommand="verse-wallpaper"
+# verse-wallpaper — set wallpaper via awww (images / animated gifs) or mpvpaper
+# (video). Called by verse with: WALL=<path> BLUR=<path> wallCommand="verse-wallpaper"
 
 set -euo pipefail
 
 WALL="${WALL:?WALL not set}"
 BLUR="${BLUR:-}"
 MONITOR="${VERSE_MONITOR:-$(hyprctl monitors -j 2>/dev/null | jq -r '.[0].name' 2>/dev/null || echo "VGA-1")}"
-CONF="/tmp/hyprpaper.conf"
 
 # expand ~ in paths
 WALL="${WALL/#\~/$HOME}"
 BLUR="${BLUR/#\~/$HOME}"
+
+# the outputs the wallpaper lands on — every connected monitor, so each one
+# gets the same image instead of only the first
+outputs() {
+    hyprctl monitors -j 2>/dev/null | jq -r '.[].name' 2>/dev/null \
+        | grep -v '^$' || echo "$MONITOR"
+}
+OUTPUTS="$(outputs | paste -sd, -)"
+OUTPUTS="${OUTPUTS:-$MONITOR}"
+
+# map the user's fit setting (Settings.wallpaperFit) to awww's --resize:
+# crop fills the screen cropping overflow, fit shows the whole image
+# letterboxed, center/original draw at native size, padded with the fill color
+fit_mode() {
+    case "${1:-crop}" in
+        fit) echo fit ;;
+        center|original) echo no ;;
+        *) echo crop ;;
+    esac
+}
+
+# awww is a layer-shell daemon: make sure it is up before sending it an image,
+# starting it ourselves if the compositor hasn't already
+ensure_awww() {
+    if awww query >/dev/null 2>&1; then return 0; fi
+    if ! command -v awww-daemon >/dev/null 2>&1; then return 1; fi
+    setsid awww-daemon >/dev/null 2>&1 &
+    for _ in $(seq 1 20); do
+        sleep 0.1
+        awww query >/dev/null 2>&1 && return 0
+    done
+    return 1
+}
 
 # determine file type
 ext="${WALL##*.}"
@@ -19,41 +51,22 @@ ext="${ext,,}"
 
 case "$ext" in
     mp4|webm|mkv|mov)
-        pkill hyprpaper 2>/dev/null || true
+        # awww only renders images and animated gifs; videos stay on mpvpaper
         pkill mpvpaper 2>/dev/null || true
+        awww clear >/dev/null 2>&1 || true
         sleep 0.1
         setsid mpvpaper -s -a MAX -o "no-audio --loop-file=inf" "$MONITOR" "$WALL" >/dev/null 2>&1 &
         ;;
     *)
         pkill mpvpaper 2>/dev/null || true
-
-        # check if hyprpaper is already running with our config
-        if pgrep -x hyprpaper >/dev/null 2>&1; then
-            # try IPC first
-            hyprctl hyprpaper wallpaper "$MONITOR, $WALL" 2>/dev/null && {
-                # IPC succeeded — still run matugen below
-                MATUGEN_OK=1
-            }
+        if ! ensure_awww; then
+            echo "verse-wallpaper: awww-daemon unavailable" >&2
+            exit 1
         fi
-
-        if [ "${MATUGEN_OK:-}" != "1" ]; then
-            # IPC failed or hyprpaper not running — write config and restart
-            pkill hyprpaper 2>/dev/null || true
-            sleep 0.2
-
-            cat > "$CONF" << EOF
-splash = false
-ipc = on
-
-wallpaper {
-    monitor = $MONITOR
-    path = $WALL
-    fit_mode = cover
-}
-EOF
-
-            setsid hyprpaper --config "$CONF" >/dev/null 2>&1 &
-        fi
+        FIT="$(fit_mode "$(jq -r '.wallpaperFit // "crop"' \
+            "$HOME/.config/verse/settings.json" 2>/dev/null)")"
+        awww img --outputs "$OUTPUTS" --resize "$FIT" \
+            --transition-type none "$WALL" >/dev/null 2>&1 || exit 1
         ;;
 esac
 

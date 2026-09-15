@@ -27,7 +27,7 @@ Column {
         NumberAnimation { duration: Anim.menu(420); easing.type: Easing.OutCubic }
     }
 
-    spacing: 14
+    spacing: 16
 
     // enabled flyouts (unloading notifications releases the
     // org.freedesktop.Notifications DBus name for other daemons)

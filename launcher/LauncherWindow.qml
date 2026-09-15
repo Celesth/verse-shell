@@ -54,6 +54,9 @@ PanelWindow {
     // so it has to behave as if it were not there at all - see the
     // keyboardFocus, mask and content bindings that read this.
     readonly property bool surfaceIdle: !root.shown
+    // Settings is a small floating utility, so it should not wait for the
+    // launcher's full-screen blur/reveal path before becoming usable.
+    readonly property bool settingsOnly: root.shown && LauncherState.pane === "settings"
 
     // LauncherState and Wallpapers both need to know whether the launcher is
     // up: panes gate live decoding on it, and a wallpaper applied while it's
@@ -367,7 +370,7 @@ PanelWindow {
     // mapped for the daemon's life now, so a reveal-sized region would sit
     // there permanently at its 1px floor - drawing a blurred dot at the reveal
     // origin with the launcher not even open.
-    BackgroundEffect.blurRegion: (root.surfaceIdle || Settings.bgBlur !== "compositor") ? noBlurRegion : (LauncherState.growMode ? growRegion : fadeBlurRegion)
+    BackgroundEffect.blurRegion: (root.surfaceIdle || root.settingsOnly || Settings.bgBlur !== "compositor") ? noBlurRegion : (LauncherState.growMode ? growRegion : fadeBlurRegion)
     // Clipped to the output, which is not cosmetic. A Region is rasterised as
     // one span per scanline, and this ellipse is as tall as it is wide - several
     // screens' worth by the end of the reveal - so most of the spans it costs to
@@ -694,11 +697,6 @@ PanelWindow {
         });
     }
     function startWallCommand(wall, resolved) {
-        // with the Quickshell parallax wallpaper on, the compositor's own
-        // wallpaper (hyprpaper/mpvpaper) is what shows beneath it - drop it so
-        // a newly chosen wallpaper doesn't linger as a second, stale copy
-        if (Settings.wallpaperParallax)
-            Quickshell.execDetached(["bash", "-c", "pkill hyprpaper 2>/dev/null; pkill mpvpaper 2>/dev/null; true"]);
         pendingWall = wall;
         // $WALL and $BLUR are exported for the command to template with.
         // $WALL is the display-sized fitted copy prepared above (never the
@@ -944,7 +942,7 @@ PanelWindow {
         // an idle mapped surface draws nothing at all (see root.surfaceIdle);
         // the backdrop is otherwise the one thing here that is opaque on its
         // own rather than riding content's opacity
-        visible: !root.surfaceIdle
+        visible: !root.surfaceIdle && !root.settingsOnly
     }
 
     Item {
@@ -958,7 +956,7 @@ PanelWindow {
         // "grow" styles: clip content itself into the growing circle
         // instead of relying on compositor blur to fake one - renders
         // identically on every compositor.
-        layer.enabled: LauncherState.growMode
+        layer.enabled: LauncherState.growMode && !root.settingsOnly
         layer.effect: MultiEffect {
             maskEnabled: true
             maskSource: growMask
@@ -967,6 +965,7 @@ PanelWindow {
         }
             Rectangle {
                 anchors.fill: parent
+                visible: !root.settingsOnly
                 color: Settings.glassEffect ? Qt.alpha(Theme.surface, Settings.dimOpacity * 0.6) : Qt.alpha(Theme.surface, Settings.dimOpacity)
                 border.width: Settings.glassEffect ? 1 : 0
                 border.color: Settings.glassEffect ? Qt.alpha(Theme.fg, 0.10) : "transparent"
@@ -1473,6 +1472,14 @@ PanelWindow {
         if (root.revealStarted || !root.shown || !root.backingWindowVisible)
             return;
         root.revealStarted = true;
+        // Unlike the content pages, Settings is already a compact panel. Show
+        // it on the first frame without creating a full-screen blur region or
+        // waiting for the launcher reveal timer.
+        if (root.settingsOnly) {
+            LauncherState.reveal = 1;
+            content.opacity = 1;
+            return;
+        }
         // With the launch animation off there is no reveal to protect
         // from the warm-up frames: show everything on the very first
         // frame. (firstFrames still runs for cache warming; the

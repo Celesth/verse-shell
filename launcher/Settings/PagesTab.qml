@@ -26,7 +26,7 @@ Column {
         NumberAnimation { duration: Anim.menu(420); easing.type: Easing.OutCubic }
     }
 
-    spacing: 14
+    spacing: 16
 
     // enabled pages: click the box to toggle, drag a row up/down
     // to reorder the cycle (topmost is the home pane). Vertical
@@ -324,4 +324,3 @@ Column {
 
     SettingRow { key: "clipsMax"; label: "Clipboard entries" }
 }
-

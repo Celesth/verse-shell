@@ -136,7 +136,7 @@ Singleton {
         case "preload":
             return Settings.preload ? "on" : "off";
         case "fontFamily":
-            return Settings.fontFamily || "system default";
+            return Settings.fontFamily || "Google Sans Text";
         case "iconTheme":
             return Settings.iconTheme || "system default";
         case "volWidth":
@@ -165,8 +165,6 @@ Singleton {
             return Settings.wallpaperStyle === "carousel-flat" ? "carousel" : Settings.wallpaperStyle === "carousel" ? "parallax carousel" : Settings.wallpaperStyle;
         case "wallpaperLive":
             return Settings.wallpaperLive ? "on" : "off";
-        case "wallpaperParallax":
-            return Settings.wallpaperParallax ? "on" : "off";
         case "wallpaperFit":
             return Settings.wallpaperFit === "fit" ? "fit" : Settings.wallpaperFit;
         case "barEnabled":
@@ -277,9 +275,6 @@ Singleton {
             break;
         case "wallpaperLive":
             Settings.wallpaperLive = !Settings.wallpaperLive;
-            break;
-        case "wallpaperParallax":
-            Settings.wallpaperParallax = !Settings.wallpaperParallax;
             break;
         case "wallpaperFit":
             Settings.wallpaperFit = root.cycle(Settings.wallpaperFit, ["crop", "fit", "center", "original"], dir);
@@ -486,9 +481,6 @@ Singleton {
             break;
         case "wallpaperLive":
             Settings.wallpaperLive = true;
-            break;
-        case "wallpaperParallax":
-            Settings.wallpaperParallax = Defaults.wallpaperParallax;
             break;
         case "wallpaperFit":
             Settings.wallpaperFit = Defaults.wallpaperFit;
